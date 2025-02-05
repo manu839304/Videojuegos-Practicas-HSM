@@ -1,133 +1,155 @@
 #include <SFML/Window.hpp>
+#include <SFML/Audio/SoundBuffer.hpp>
+#include <SFML/Audio/Sound.hpp>
 #include <SFML/Graphics.hpp>
 #include <string>
+#include <cmath>
 #include <iostream>
 
+using namespace std;
 
 bool gEnMovimiento { false };
 constexpr int escala { 1 };
-constexpr int gWindowWidth{ 800 * escala};
-constexpr int gWindowHeight{ 250 * escala};
+int gWindowWidth{ 800 * escala };
+int gWindowHeight{ 600 * escala };
 
-int main()
+float randomFloat (float min, float max)
 {
-    std::string nombreVentana { "Castlevania: En busca de la Eduardomena Pose" };
+    return min + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (max - min)));
+}
+
+int main(){
+    std::string nombreVentana { "Rebote simple" };
     sf::RenderWindow window(sf::VideoMode({gWindowWidth, gWindowHeight}), nombreVentana, sf::Style::Default);
     window.setVerticalSyncEnabled(true);
-
-    sf::Texture bgTexture;
-    if (!bgTexture.loadFromFile("../assets/maps/level1Entrance.png", false))
-    {
-        std::cerr << "Error cargando la textura" << std::endl;
-    }
-    sf::Sprite bgSprite(bgTexture);
-    bgSprite.setTextureRect(sf::IntRect({1, 11}, {768, 192}));
+    
+    srand(static_cast<unsigned int>(time(0)));
 
     sf::Image simonImage;
-    if (!simonImage.loadFromFile("../assets/sprites/player/simonBelmont.png"))
+    if (!simonImage.loadFromFile("./assets/sprites/player/simonBelmont.png"))
     {
         std::cerr << "Error cargando la imagen" << std::endl;
+        return -1;
     }
     simonImage.createMaskFromColor(sf::Color(0x74, 0x74, 0x74));    // color key
-    sf::Texture simonTexture(simonImage, false);
+    sf::Texture simonTexture;
+    if (!simonTexture.loadFromImage(simonImage))
+    {
+        std::cerr << "Error cargando la textura" << std::endl;
+        return -1;
+    }
     sf::Sprite simonSprite(simonTexture);
     simonSprite.setTextureRect(sf::IntRect({1, 21}, {16, 32}));
-    simonSprite.setPosition({245.f, 139.f});
+    
+    float zoom = 1.0;
 
-    bool haciaIzquierda { false };
-    bool haciaDerecha { false };
-    bool haciaArriba { false };
+    simonSprite.setScale(sf::Vector2f(zoom, zoom));
 
-    // run the program as long as the window is open
-    while (window.isOpen())
+    sf::SoundBuffer buffer;
+    if(!buffer.loadFromFile("./assets/sounds/08.wav"))
     {
-        // check all the window's events that were triggered since the last iteration of the loop
-        while (const std::optional event = window.pollEvent())
+        std::cerr << "Error cargando el audio" << std::endl;
+        return -1;
+    }
+    sf::Sound sound(buffer);
+
+    // posicion, velocidad y direccion random
+    auto resetSprite = [&](){
+        simonSprite.setPosition({randomFloat(0, gWindowWidth - 16), randomFloat(0, gWindowHeight - 32)});
+        float speed = randomFloat(0.1f, 0.5f);
+
+        float angle = randomFloat(0.f, 2.f * 3.14159f);
+    
+        float dx = speed * cos(angle);
+        float dy = speed * sin(angle);
+
+        return std::make_pair(dx, dy);
+    };
+    auto [dx, dy] = resetSprite();
+
+    sf::Clock clock;    
+    sf::Vector2i lastPosition = window.getPosition();
+    while (window.isOpen()){
+
+        while (const std::optional event  = window.pollEvent())
         {
             if (event->is<sf::Event::Closed>())
             {
                 window.close();
             }
-            else if (const auto* resized = event->getIf<sf::Event::Resized>())
+            if (event->is<sf::Event::KeyPressed>())
+            {
+                if (const auto* keyPressed = event->getIf<sf::Event::KeyPressed>())
+                {
+                    if(keyPressed->scancode == sf::Keyboard::Scancode::Enter)
+                    {
+                        auto [newDx, newDy] = resetSprite();
+                        dx = newDx;
+                        dy = newDy;
+                    }
+                    if(keyPressed->scancode == sf::Keyboard::Scancode::Up)
+                    {
+                        zoom = zoom + 0.1;
+                        
+                    }   
+                    if(keyPressed->scancode == sf::Keyboard::Scancode::Down)
+                    {
+                        zoom = zoom - 0.1;
+                    }
+                }
+
+            }
+            if (const auto* resized = event->getIf<sf::Event::Resized>())
             {
                 std::cout << "new width: " << resized->size.x << std::endl;
                 std::cout << "new height: " << resized->size.y << std::endl;
-            }
-            else if (const auto* keyPressed = event->getIf<sf::Event::KeyPressed>())
-            {
-                switch (keyPressed->scancode)
-                {
-                case sf::Keyboard::Scancode::Escape:
-                    window.close();
-                    break;
-                case sf::Keyboard::Scancode::Up:
-                    haciaArriba = true;
-                    simonSprite.move({0.f, -1.5f});
-                    break;
-                case sf::Keyboard::Scancode::Down:
-                    simonSprite.move({0.f, 1.5f});
-                    break;
-                case sf::Keyboard::Scancode::Left:
-                    haciaIzquierda = true;
-                    haciaDerecha = false;
-                    simonSprite.setScale({1.f, 1.f});
-                    break;
-                case sf::Keyboard::Scancode::Right:
-                    haciaDerecha = true;
-                    haciaIzquierda = false;
-                    simonSprite.setScale({-1.f, 1.f});
-                    break;
-                default:
-                    break;
-                }
-            } else if (const auto* keyPressed = event->getIf<sf::Event::KeyReleased>())
-            {
-                switch (keyPressed->scancode)
-                {
-                case sf::Keyboard::Scancode::Up:
-                    haciaArriba = false;
-                    break;
-                case sf::Keyboard::Scancode::Left:
-                    haciaIzquierda = false;
-                    break;
-                case sf::Keyboard::Scancode::Right:
-                    haciaDerecha = false;
-                    break;
-                default:
-                    break;
-                }
+                sf::Vector2u newSize = resized->size;
+
+                gWindowWidth = newSize.x;
+                gWindowHeight = newSize.y;
+
+                float aspectRatio = static_cast<float>(newSize.x) / static_cast<float>(newSize.y);
+                sf::View view = window.getView();
+                view.setSize(sf::Vector2f(800.f * aspectRatio, 600.f));
+                view.setCenter(sf::Vector2f(400.f * aspectRatio, 300.f));
+                window.setView(view);
             }
         }
 
-        if (haciaArriba)
+        // Detectar si la ventana ha sido movida
+        /*
+        sf::Vector2i currentPosition = window.getPosition();
+        if (currentPosition != lastPosition)
         {
-            if (haciaDerecha)
-            {
-                simonSprite.move({1.f, -1.5f});
-            }
-            else if (haciaIzquierda)
-            {
-                simonSprite.move({-1.f, -1.5f});
-            }
-            else
-            {
-                simonSprite.move({0.f, -1.5f});
-            }
+            std::cout << "La ventana ha sido movida a: (" << currentPosition.x << ", " << currentPosition.y << ")" << std::endl;
+            lastPosition = currentPosition;
         }
-        if (haciaIzquierda)
-        {
-            simonSprite.move({-1.5f, 0.f});
-        }
-        else if (haciaDerecha)
-        {
-            simonSprite.move({1.5f, 0.f});
-        }
-        
-        window.clear(sf::Color::Black); // obligatorio limpiar la ventana antes de dibujar SIEMPRE
+        */
+        simonSprite.setScale(sf::Vector2f(zoom, zoom));
+        float deltaTime = clock.restart().asMilliseconds();
 
-        window.draw(bgSprite);
+        simonSprite.move(sf::Vector2f(dx*deltaTime, dy*deltaTime));
+
+        // Obtener las dimensiones actuales del sprite
+        float spriteWidth = 16 * zoom;
+        float spriteHeight = 32 * zoom;
+
+        //Hits
+        if (simonSprite.getPosition().x <= 0 || simonSprite.getPosition().x + spriteWidth >= gWindowWidth)
+        {
+            dx = -dx;
+            sound.play();
+        }
+
+        if (simonSprite.getPosition().y <= 0 || simonSprite.getPosition().y + spriteHeight >= gWindowHeight)
+        {
+            dy = -dy;
+            sound.play();
+        }
+
+        window.clear(sf::Color::Black);
         window.draw(simonSprite);
-
         window.display();
     }
+
 }
