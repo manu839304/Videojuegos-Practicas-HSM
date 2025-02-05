@@ -1,0 +1,7 @@
+# Archivos generados por el compilador
+*.o
+*.exe
+
+# Archivos de configuración específicos de Visual Studio
+.vs/
+.vscode/
