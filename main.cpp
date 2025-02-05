@@ -119,8 +119,8 @@ int main(){
                 
                 sf::Vector2u newSize = resized->size;
 
-                gWindowWidth = std::max(static_cast<unsigned int>(zoom * 16), newSize.x);
-                gWindowHeight = std::max(static_cast<unsigned int>(zoom * 32), newSize.y);
+                gWindowWidth = std::max(static_cast<unsigned int>(zoom * 16 * 2), newSize.x);
+                gWindowHeight = std::max(static_cast<unsigned int>(zoom * 32 * 2), newSize.y);
                 window.setSize({gWindowWidth, gWindowHeight});
 
                 std::cout << "new width: " << gWindowWidth << std::endl;
