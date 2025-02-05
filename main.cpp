@@ -12,11 +12,15 @@ bool gEnMovimiento { false };
 constexpr int escala { 1 };
 int gWindowWidth{ 800 * escala };
 int gWindowHeight{ 600 * escala };
+float max_zoom { 100 };
+float min_zoom { 0.1 };
 
 float randomFloat (float min, float max)
 {
     return min + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (max - min)));
 }
+
+
 
 int main(){
     std::string nombreVentana { "Rebote simple" };
@@ -26,7 +30,7 @@ int main(){
     srand(static_cast<unsigned int>(time(0)));
 
     sf::Image simonImage;
-    if (!simonImage.loadFromFile("./assets/sprites/player/simonBelmont.png"))
+    if (!simonImage.loadFromFile("../assets/sprites/player/simonBelmont.png"))
     {
         std::cerr << "Error cargando la imagen" << std::endl;
         return -1;
@@ -46,7 +50,7 @@ int main(){
     simonSprite.setScale(sf::Vector2f(zoom, zoom));
 
     sf::SoundBuffer buffer;
-    if(!buffer.loadFromFile("./assets/sounds/08.wav"))
+    if(!buffer.loadFromFile("../assets/sounds/08.wav"))
     {
         std::cerr << "Error cargando el audio" << std::endl;
         return -1;
@@ -55,7 +59,7 @@ int main(){
 
     // posicion, velocidad y direccion random
     auto resetSprite = [&](){
-        simonSprite.setPosition({randomFloat(0, gWindowWidth - 16), randomFloat(0, gWindowHeight - 32)});
+        simonSprite.setPosition({randomFloat(0, gWindowWidth - 16 * zoom), randomFloat(0, gWindowHeight - 32 * zoom)});
         float speed = randomFloat(0.1f, 0.5f);
 
         float angle = randomFloat(0.f, 2.f * 3.14159f);
@@ -65,6 +69,11 @@ int main(){
 
         return std::make_pair(dx, dy);
     };
+
+    auto centerSprite = [&](){
+        simonSprite.setPosition({gWindowWidth / 2.f, gWindowHeight / 2.f});
+    };
+
     auto [dx, dy] = resetSprite();
 
     sf::Clock clock;    
@@ -89,30 +98,51 @@ int main(){
                     }
                     if(keyPressed->scancode == sf::Keyboard::Scancode::Up)
                     {
-                        zoom = zoom + 0.1;
-                        
+                        if (zoom <= max_zoom){
+                            zoom = zoom + 0.1;
+                        }
+                        cout << zoom << endl;
                     }   
                     if(keyPressed->scancode == sf::Keyboard::Scancode::Down)
                     {
-                        zoom = zoom - 0.1;
+                        if (zoom >= min_zoom){
+                            zoom = zoom - 0.1;
+                        }                 
+                        cout << zoom << endl;
+   
                     }
                 }
 
             }
             if (const auto* resized = event->getIf<sf::Event::Resized>())
             {
-                std::cout << "new width: " << resized->size.x << std::endl;
-                std::cout << "new height: " << resized->size.y << std::endl;
+                
                 sf::Vector2u newSize = resized->size;
 
-                gWindowWidth = newSize.x;
-                gWindowHeight = newSize.y;
+                gWindowWidth = std::max(static_cast<unsigned int>(zoom * 16), newSize.x);
+                gWindowHeight = std::max(static_cast<unsigned int>(zoom * 32), newSize.y);
+                window.setSize({gWindowWidth, gWindowHeight});
 
-                float aspectRatio = static_cast<float>(newSize.x) / static_cast<float>(newSize.y);
+                std::cout << "new width: " << gWindowWidth << std::endl;
+                std::cout << "new height: " << gWindowHeight << std::endl;
+                
+                float aspectRatio = static_cast<float>(gWindowWidth) / static_cast<float>(gWindowHeight);
                 sf::View view = window.getView();
-                view.setSize(sf::Vector2f(800.f * aspectRatio, 600.f));
-                view.setCenter(sf::Vector2f(400.f * aspectRatio, 300.f));
+                view.setSize(sf::Vector2f(gWindowWidth, gWindowHeight));
+                // Se divide por dos ya que el centro está justo en la mitad
+                view.setCenter(sf::Vector2f(gWindowWidth / 2.f, gWindowHeight / 2.f));
+
                 window.setView(view);
+
+                float spriteWidth = 16 * zoom;
+                float spriteHeight = 32 * zoom;
+                sf::Vector2f pos = simonSprite.getPosition();
+
+                if (pos.x + spriteWidth >= gWindowWidth || pos.y + spriteHeight >= gWindowHeight || pos.x <= 0 || pos.y <= 0)
+                {
+                    cout << "Centrado" << endl;
+                    centerSprite();
+                }
             }
         }
 
