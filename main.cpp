@@ -16,7 +16,9 @@ unsigned int gWindowHeight = originalWindowHeight;
 bool gEnMovimiento = false;
 float max_zoom = 10;
 float min_zoom = 0.7;
+bool isResizing = false;
 float windowScaleFactor = 1.0f;
+sf::Vector2u lastWindowSize = {gWindowWidth, gWindowHeight};
 
 float randomFloat (float min, float max)
 {
@@ -115,7 +117,7 @@ int main(){
             }
             if (const auto* resized = event->getIf<sf::Event::Resized>())
             {
-                
+                isResizing = true;
                 
                 gWindowWidth = static_cast<float>(resized->size.x);
                 gWindowHeight = static_cast<float>(resized->size.y);
@@ -178,26 +180,39 @@ int main(){
             lastPosition = currentPosition;
         }
         */
-        simonSprite.setScale(sf::Vector2f(zoom*windowScaleFactor, zoom*windowScaleFactor));
-        float deltaTime = clock.restart().asMilliseconds();
 
-        simonSprite.move(sf::Vector2f(dx*deltaTime, dy*deltaTime));
-
-        // Obtener las dimensiones actuales del sprite
-        float spriteWidth = 16 * zoom;
-        float spriteHeight = 32 * zoom;
-
-        //Hits
-        if (simonSprite.getPosition().x <= 0 || simonSprite.getPosition().x + spriteWidth >= gWindowWidth)
-        {
-            dx = -dx;
-            sound.play();
+       if (isResizing && (window.getSize() != lastWindowSize)) {
+            lastWindowSize = window.getSize();
+        } else if (isResizing && (window.getSize() == lastWindowSize)) {
+            isResizing = false;
         }
 
-        if (simonSprite.getPosition().y <= 0 || simonSprite.getPosition().y + spriteHeight >= gWindowHeight)
+        if (isResizing) {
+            clock.restart();
+        }
+        else
         {
-            dy = -dy;
-            sound.play();
+            simonSprite.setScale(sf::Vector2f(zoom*windowScaleFactor, zoom*windowScaleFactor));
+            float deltaTime = clock.restart().asMilliseconds();
+
+            simonSprite.move(sf::Vector2f(dx*deltaTime, dy*deltaTime));
+
+            // Obtener las dimensiones actuales del sprite
+            float spriteWidth = 16 * zoom * windowScaleFactor;
+            float spriteHeight = 32 * zoom * windowScaleFactor;
+
+            //Hits
+            if (simonSprite.getPosition().x <= 0 || simonSprite.getPosition().x + spriteWidth >= gWindowWidth)
+            {
+                dx = -dx;
+                sound.play();
+            }
+
+            if (simonSprite.getPosition().y <= 0 || simonSprite.getPosition().y + spriteHeight >= gWindowHeight)
+            {
+                dy = -dy;
+                sound.play();
+            }
         }
 
         window.clear(sf::Color::Black);
