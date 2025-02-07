@@ -2,7 +2,7 @@
 CC=g++
 CFLAGS=-I"./SFML/include" -g -Wall -std=c++20
 LDFLAGS= -L"./SFML/lib" -lSFML-audio -lSFML-graphics -lSFML-window -lSFML-system
-SRC=main.cpp
+SRC=main3.cpp
 OBJ_DIR=build
 OBJ=$(OBJ_DIR)/main.o
 EXEC=$(OBJ_DIR)/game.exe
