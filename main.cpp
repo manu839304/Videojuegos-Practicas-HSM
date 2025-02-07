@@ -9,12 +9,14 @@
 
 using namespace std;
 
-bool gEnMovimiento { false };
-constexpr int escala { 1 };
-unsigned int gWindowWidth{ 800 * escala };
-unsigned int gWindowHeight{ 600 * escala };
-float max_zoom { 10 };
-float min_zoom { 0.7 };
+const unsigned int originalWindowWidth = 800;
+const unsigned int originalWindowHeight = 600;
+unsigned int gWindowWidth = originalWindowWidth;
+unsigned int gWindowHeight = originalWindowHeight;
+bool gEnMovimiento = false;
+float max_zoom = 10;
+float min_zoom = 0.7;
+float windowScaleFactor = 1.0f;
 
 float randomFloat (float min, float max)
 {
@@ -76,7 +78,6 @@ int main(){
     };*/
 
     auto [dx, dy] = resetSprite();
-    sf::Vector2u initialWindowSize = window.getSize();
     sf::View view(window.getDefaultView());
     sf::Clock clock;    
     while (window.isOpen()){
@@ -114,20 +115,27 @@ int main(){
             }
             if (const auto* resized = event->getIf<sf::Event::Resized>())
             {
-                float width = static_cast<float>(resized->size.x);
-                float height = static_cast<float>(resized->size.y);
-                view.setSize(sf::Vector2f(width, height));
-                view.setCenter(sf::Vector2f(width / 2, height / 2));
-                float scaleX = width / static_cast<float>(initialWindowSize.x);
-                float scaleY = height / static_cast<float>(initialWindowSize.y);
-                simonSprite.setScale(sf::Vector2f(scaleX, scaleY));
+                
+                
+                gWindowWidth = static_cast<float>(resized->size.x);
+                gWindowHeight = static_cast<float>(resized->size.y);
+
+                windowScaleFactor = std::min(
+                    static_cast<float>(gWindowWidth) / originalWindowWidth,  // Ancho original de la ventana
+                    static_cast<float>(gWindowHeight) / originalWindowHeight  // Alto original de la ventana
+                );
+
+                view.setSize(sf::Vector2f(gWindowWidth, gWindowHeight));
+                view.setCenter(sf::Vector2f(gWindowWidth / 2, gWindowHeight / 2));
+                window.setView(view);
+
                 sf::FloatRect spriteBounds = simonSprite.getGlobalBounds();
                 // Ensure the sprite stays within the window bounds
                 sf::Vector2f spritePos = simonSprite.getPosition();
-                spritePos.x = std::min(std::max(spritePos.x, 0.f), static_cast<float>(width) - spriteBounds.size.x);
-                spritePos.y = std::min(std::max(spritePos.y, 0.f), height - spriteBounds.size.y);
+                spritePos.x = std::min(std::max(spritePos.x, 0.f), gWindowWidth - spriteBounds.size.x);
+                spritePos.y = std::min(std::max(spritePos.y, 0.f), gWindowHeight - spriteBounds.size.y);
                 simonSprite.setPosition(spritePos);
-                
+
                 /*
                 sf::Vector2u newSize = resized->size;
 
@@ -170,7 +178,7 @@ int main(){
             lastPosition = currentPosition;
         }
         */
-        simonSprite.setScale(sf::Vector2f(zoom, zoom));
+        simonSprite.setScale(sf::Vector2f(zoom*windowScaleFactor, zoom*windowScaleFactor));
         float deltaTime = clock.restart().asMilliseconds();
 
         simonSprite.move(sf::Vector2f(dx*deltaTime, dy*deltaTime));
