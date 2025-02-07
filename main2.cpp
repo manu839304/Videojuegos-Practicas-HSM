@@ -41,6 +41,7 @@ struct SpriteData {
     float dx, dy;
     float zoom;
     int depth; // Depth layer (lower values are drawn first)
+    int backgroundLayer; // Background layer (0, 1, or 2)
 };
 
 // Function to reset sprite position and velocity
@@ -58,74 +59,80 @@ void updateSprite(SpriteData& spriteData, sf::Sound& sound, std::atomic<bool>& i
     sf::Clock clock;
     while (true) {
         if (!isResizing) {
-            
-
             // Update sprite position
-            float deltaTime = clock.restart().asMilliseconds();  // Ahora deltaTime está en segundos
+            float deltaTime = clock.restart().asMilliseconds();  // Now deltaTime is in milliseconds
 
             spriteData.sprite.move(sf::Vector2f(spriteData.dx * deltaTime, spriteData.dy * deltaTime));
 
             // Check for collisions with window borders
             std::lock_guard<std::mutex> lock(mtx);
+
+            spriteData.sprite.setScale(sf::Vector2f(spriteData.zoom * windowScaleFactor, spriteData.zoom * windowScaleFactor));
+            sf::Vector2f pos = spriteData.sprite.getPosition();
+            pos.x = std::min(pos.x, static_cast<float>(gWindowWidth) - 16 * spriteData.zoom * windowScaleFactor);
+            pos.y = std::min(pos.y, static_cast<float>(gWindowHeight) - 32 * spriteData.zoom * windowScaleFactor);
+            spriteData.sprite.setPosition(pos);
+
             float spriteWidth = 16 * spriteData.zoom * windowScaleFactor;
             float spriteHeight = 32 * spriteData.zoom * windowScaleFactor;
-            sf::Vector2f pos = spriteData.sprite.getPosition();
 
+            // Elastic collision
             if (pos.x <= 0 || pos.x + spriteWidth >= gWindowWidth) {
-                spriteData.dx = -spriteData.dx;
+                spriteData.dx = -spriteData.dx;  // Reverse direction horizontally
                 sound.play();
                 pos.x = std::max(0.f, std::min(pos.x, gWindowWidth - spriteWidth));
             }
             if (pos.y <= 0 || pos.y + spriteHeight >= gWindowHeight) {
-                spriteData.dy = -spriteData.dy;
+                spriteData.dy = -spriteData.dy;  // Reverse direction vertically
                 sound.play();
                 pos.y = std::max(0.f, std::min(pos.y, gWindowHeight - spriteHeight));
             }
 
             spriteData.sprite.setPosition(pos);
-            
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(20)); // Simulate 100 FPS
+        //std::this_thread::sleep_for(std::chrono::milliseconds(20)); // Simulate 100 FPS
     }
 }
 
 int main() {
     std::string nombreVentana{"Rebote simple"};
     sf::RenderWindow window(sf::VideoMode({gWindowWidth, gWindowHeight}), nombreVentana, sf::Style::Default);
-    window.setVerticalSyncEnabled(true);
+    //window.setVerticalSyncEnabled(true);
     window.setVerticalSyncEnabled(false);
-    window.setFramerateLimit(120);  // Limita a 120 FPS
+    window.setFramerateLimit(120);  // Limit to 120 FPS
 
     srand(static_cast<unsigned int>(time(0)));
 
     // Load texture
     sf::Image simonImage;
     if (!simonImage.loadFromFile("./assets/sprites/player/simonBelmont.png")) {
-        std::cerr << "Error cargando la imagen" << std::endl;
+        std::cerr << "Error loading the image" << std::endl;
         return -1;
     }
     simonImage.createMaskFromColor(sf::Color(0x74, 0x74, 0x74)); // Color key
     sf::Texture simonTexture;
     if (!simonTexture.loadFromImage(simonImage)) {
-        std::cerr << "Error cargando la textura" << std::endl;
+        std::cerr << "Error loading the texture" << std::endl;
         return -1;
     }
 
     // Create multiple sprites
     std::vector<SpriteData> sprites;
-    for (int i = 0; i < 2; ++i) {
+    for (int i = 0; i < 3; ++i) {  // Create 9 sprites, divided into 3 backgrounds
         sf::Sprite sprite(simonTexture);
         sprite.setTextureRect(sf::IntRect({1, 21}, {16, 32}));
         float zoom = randomFloat(1.0f, 3.0f);
         sprite.setScale(sf::Vector2f(zoom, zoom));
         auto [dx, dy] = resetSprite(sprite, zoom);
-        sprites.push_back({sprite, dx, dy, zoom, i}); // Assign depth based on index
+
+        int backgroundLayer = i / 3;  // Group sprites into 3 backgrounds
+        sprites.push_back({sprite, dx, dy, zoom, i % 3, backgroundLayer});
     }
 
     // Load sound
     sf::SoundBuffer buffer;
     if (!buffer.loadFromFile("./assets/sounds/08.wav")) {
-        std::cerr << "Error cargando el audio" << std::endl;
+        std::cerr << "Error loading the audio" << std::endl;
         return -1;
     }
     sf::Sound sound(buffer);
@@ -142,9 +149,6 @@ int main() {
         // Handle events
         while (const std::optional event  = window.pollEvent()) {
             if (event->is<sf::Event::Closed>()) {
-                //isRunning = false;
-                // Join threads
-                
                 window.close();
             }
             if (const auto* resized = event->getIf<sf::Event::Resized>()) {
@@ -166,10 +170,27 @@ int main() {
         // Draw sprites in order of depth
         window.clear(sf::Color::Black);
         std::lock_guard<std::mutex> lock(mtx);
-        for (const auto& spriteData : sprites) {
+
+        // Sort by depth (for layering)
+        std::sort(sprites.begin(), sprites.end(), [](const SpriteData& a, const SpriteData& b) {
+            return a.depth < b.depth;
+        });
+
+        // Paint sprites based on their background layer
+        for (auto& spriteData : sprites) {
+            sf::Color spriteColor;
+            if (spriteData.backgroundLayer == 0) {
+                spriteColor = sf::Color::Red;
+            } else if (spriteData.backgroundLayer == 1) {
+                spriteColor = sf::Color::Green;
+            } else {
+                spriteColor = sf::Color::Blue;
+            }
+
+            spriteData.sprite.setColor(spriteColor);
             window.draw(spriteData.sprite);
         }
-        //std::this_thread::sleep_for(std::chrono::milliseconds(10)); // Simulate 100 FPS
+
         window.display();
     }
 
