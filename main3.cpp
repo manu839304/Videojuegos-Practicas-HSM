@@ -10,7 +10,9 @@ const unsigned int originalWindowWidth = 800;
 const unsigned int originalWindowHeight = 600;
 unsigned int gWindowWidth = originalWindowWidth;
 unsigned int gWindowHeight = originalWindowHeight;
-const float spawnInterval = 0.05f;
+unsigned int minWindowWidth = 200;
+unsigned int minWindowHeight = 150;
+const float spawnInterval = 0.1f;
 bool isSpacePressed = false;
 bool isResizing = false;
 float windowScaleFactor = 1.0f;
@@ -77,22 +79,35 @@ int main() {
                 }
             }
 
-           if (event->is<sf::Event::Resized>()) {
+           if (const auto* resized = event->getIf<sf::Event::Resized>()) {
                 isResizing = true;
+                
+                float newResizedWidth = std::max(resized->size.x, minWindowWidth);
+                float newResizedHeight = std::max(resized->size.y, minWindowHeight);
 
-                const auto* resized = event->getIf<sf::Event::Resized>();
-                gWindowWidth = resized->size.x;
-                gWindowHeight = resized->size.y;
+                float scaleX = static_cast<float>(newResizedWidth) / gWindowWidth;
+                float scaleY = static_cast<float>(newResizedHeight) / gWindowHeight;
+                
+                gWindowWidth = static_cast<float>(newResizedWidth);
+                gWindowHeight = static_cast<float>(newResizedHeight);
+                
+                windowScaleFactor = std::min(
+                    static_cast<float>(gWindowWidth) / originalWindowWidth,
+                    static_cast<float>(gWindowHeight) / originalWindowHeight
+                );
+
+                for (auto& s : sprites) {
+                    sf::Vector2f spritePos = s.sprite.getPosition();
+                    spritePos.x = spritePos.x * scaleX;
+                    spritePos.y = spritePos.y * scaleY;
+                    s.sprite.setPosition(spritePos);
+                }
 
                 sf::View view = window.getView();
                 view.setSize({static_cast<float>(gWindowWidth), static_cast<float>(gWindowHeight)});
                 view.setCenter({static_cast<float>(gWindowWidth)/2.0f, static_cast<float>(gWindowHeight)/2.0f});
                 window.setView(view);
-
-                windowScaleFactor = std::min(
-                    static_cast<float>(gWindowWidth) / originalWindowWidth,
-                    static_cast<float>(gWindowHeight) / originalWindowHeight
-                );
+                window.setSize({gWindowWidth, gWindowHeight});
             }
         }
 
@@ -114,7 +129,7 @@ int main() {
                 
                 float angle = randomFloat(0.f, 2.f * 3.14159f);
                 float speed = randomFloat(2.0f, 3.5f);
-                float rotationSpeed = randomFloat(1.0f, 2.5f); // Velocidad de rotación aleatoria
+                float rotationSpeed = randomFloat(1.0f, 2.5f);
                 sf::Vector2f velocity(std::cos(angle) * speed, std::sin(angle) * speed);
                 
                 sprites.push_back({sprite, velocity, 0.0f, rotationSpeed});
@@ -127,12 +142,13 @@ int main() {
                 sf::Vector2f pos = s.sprite.getPosition();
                 float distanceFromCenter = std::sqrt(std::pow(pos.x - gWindowWidth / 2.0f, 2) + std::pow(pos.y - gWindowHeight / 2.0f, 2));
                 float zoomMultiplier = isSpacePressed ? 2.0f : 1.0f;
-                float speedMultiplier = 1.0f + (distanceFromCenter / 400.0f); // Aumenta la velocidad según la distancia
+                // Para acelerar la velocidad mientras se aleja del centro
+                float speedMultiplier = 1.0f + (distanceFromCenter / 400.0f);
 
                 speedMultiplier = isSpacePressed ? speedMultiplier * 2.0f : speedMultiplier;
 
                 pos += s.velocity * deltaTime * 100.0f * speedMultiplier;
-                s.scale += deltaTime * 2.0f * zoomMultiplier; // Incremento progresivo del tamaño
+                s.scale += deltaTime * 2.0f * zoomMultiplier;
                 //float aspectRatio = static_cast<float>(gWindowWidth) / static_cast<float>(gWindowHeight);
                 s.sprite.setScale({s.scale * windowScaleFactor, s.scale * windowScaleFactor});
                 s.sprite.rotate(sf::degrees(s.rotationSpeed * deltaTime * 100.0f * (isSpacePressed ? 2.0f : 1.0f))); // Aplicar rotación

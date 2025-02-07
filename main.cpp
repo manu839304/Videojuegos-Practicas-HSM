@@ -13,6 +13,8 @@ const unsigned int originalWindowWidth = 800;
 const unsigned int originalWindowHeight = 600;
 unsigned int gWindowWidth = originalWindowWidth;
 unsigned int gWindowHeight = originalWindowHeight;
+unsigned int minWindowWidth = 200;
+unsigned int minWindowHeight = 150;
 bool gEnMovimiento = false;
 float max_zoom = 10;
 float min_zoom = 0.7;
@@ -119,24 +121,46 @@ int main(){
             {
                 isResizing = true;
                 
-                gWindowWidth = static_cast<float>(resized->size.x);
-                gWindowHeight = static_cast<float>(resized->size.y);
+                float newResizedWidth = std::max(resized->size.x, minWindowWidth);
+                float newResizedHeight = std::max(resized->size.y, minWindowHeight);
+
+                float scaleX = static_cast<float>(newResizedWidth) / gWindowWidth;
+                float scaleY = static_cast<float>(newResizedHeight) / gWindowHeight;
+                
+                gWindowWidth = static_cast<float>(newResizedWidth);
+                gWindowHeight = static_cast<float>(newResizedHeight);
 
                 windowScaleFactor = std::min(
-                    static_cast<float>(gWindowWidth) / originalWindowWidth,  // Ancho original de la ventana
-                    static_cast<float>(gWindowHeight) / originalWindowHeight  // Alto original de la ventana
+                    static_cast<float>(gWindowWidth) / originalWindowWidth,
+                    static_cast<float>(gWindowHeight) / originalWindowHeight
                 );
-
+                
                 view.setSize(sf::Vector2f(gWindowWidth, gWindowHeight));
                 view.setCenter(sf::Vector2f(gWindowWidth / 2, gWindowHeight / 2));
                 window.setView(view);
+                window.setSize({gWindowWidth, gWindowHeight});
 
-                sf::FloatRect spriteBounds = simonSprite.getGlobalBounds();
-                // Ensure the sprite stays within the window bounds
+
+                //sf::FloatRect spriteBounds = simonSprite.getGlobalBounds();
+
+
+                sf::Vector2f spritePos = simonSprite.getPosition();
+                spritePos.x = spritePos.x * scaleX;
+                spritePos.y = spritePos.y * scaleY;
+                simonSprite.setPosition(spritePos);
+
+
+                /* FUNCIONA
                 sf::Vector2f spritePos = simonSprite.getPosition();
                 spritePos.x = std::min(std::max(spritePos.x, 0.f), gWindowWidth - spriteBounds.size.x);
                 spritePos.y = std::min(std::max(spritePos.y, 0.f), gWindowHeight - spriteBounds.size.y);
                 simonSprite.setPosition(spritePos);
+                */
+
+
+
+
+
 
                 /*
                 sf::Vector2u newSize = resized->size;
@@ -202,16 +226,30 @@ int main(){
             float spriteHeight = 32 * zoom * windowScaleFactor;
 
             //Hits
-            if (simonSprite.getPosition().x <= 0 || simonSprite.getPosition().x + spriteWidth >= gWindowWidth)
-            {
+            // Borde izquierdo
+            if (simonSprite.getPosition().x <= 0) {
                 dx = -dx;
                 sound.play();
+                simonSprite.setPosition({1, simonSprite.getPosition().y});
+            
+            // Borde derecho
+            } else if (simonSprite.getPosition().x + spriteWidth >= gWindowWidth) {
+                dx = -dx;
+                sound.play();
+                simonSprite.setPosition({gWindowWidth - spriteWidth - 1, simonSprite.getPosition().y});
             }
-
-            if (simonSprite.getPosition().y <= 0 || simonSprite.getPosition().y + spriteHeight >= gWindowHeight)
-            {
+            
+            // Borde superior
+            if (simonSprite.getPosition().y <= 0) {
                 dy = -dy;
                 sound.play();
+                simonSprite.setPosition({simonSprite.getPosition().x, 1});
+            
+            // Borde inferior
+            } else if (simonSprite.getPosition().y + spriteHeight >= gWindowHeight) {
+                dy = -dy;
+                sound.play();
+                simonSprite.setPosition({simonSprite.getPosition().x, gWindowHeight - spriteHeight - 1});
             }
         }
 
