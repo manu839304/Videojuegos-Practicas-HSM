@@ -15,8 +15,11 @@ unsigned int minWindowHeight = 150;
 const float spawnInterval = 0.1f;
 bool isSpacePressed = false;
 bool isResizing = false;
+bool isMoving = false;
+bool lostFocus = false;
 float windowScaleFactor = 1.0f;
 sf::Vector2u lastWindowSize = {gWindowWidth, gWindowHeight};
+sf::Vector2i lastWindowPosition = {0, 0};
 
 struct SpriteInfo {
     sf::Sprite sprite;
@@ -39,7 +42,7 @@ int main() {
     srand(static_cast<unsigned int>(time(0)));
 
     sf::Image simonImage;
-    if (!simonImage.loadFromFile("./assets/sprites/player/simonBelmont.png")) {
+    if (!simonImage.loadFromFile("../assets/sprites/player/simonBelmont.png")) {
         std::cerr << "Error cargando la imagen" << std::endl;
         return -1;
     }
@@ -53,7 +56,8 @@ int main() {
     std::vector<SpriteInfo> sprites;
     sf::Clock clock;
     sf::Clock spawnClock;
-    
+
+    lastWindowPosition = window.getPosition();
     
     while (window.isOpen()) {
         while (const std::optional event  = window.pollEvent()){
@@ -78,8 +82,17 @@ int main() {
                     } 
                 }
             }
+            
 
-           if (const auto* resized = event->getIf<sf::Event::Resized>()) {
+            if (const auto* focusLost = event->getIf<sf::Event::FocusLost>()) {
+                lostFocus = true;
+            }
+
+            if (const auto* focusGained = event->getIf<sf::Event::FocusGained>()) {
+                lostFocus = false;
+            }
+
+            if (const auto* resized = event->getIf<sf::Event::Resized>()) {
                 isResizing = true;
                 
                 float newResizedWidth = std::max(resized->size.x, minWindowWidth);
@@ -111,13 +124,21 @@ int main() {
             }
         }
 
+        if(lastWindowPosition != window.getPosition()){
+            isMoving = true;
+            lastWindowPosition = window.getPosition();
+        } else if (isMoving && (window.getPosition() == lastWindowPosition)) {
+            isMoving = false;
+        }
+
         if (isResizing && (window.getSize() != lastWindowSize)) {
             lastWindowSize = window.getSize();
         } else if (isResizing && (window.getSize() == lastWindowSize)) {
             isResizing = false;
         }
+        
 
-        if (isResizing) {
+        if (isResizing || isMoving || lostFocus) {
             clock.restart();
         }
         else
