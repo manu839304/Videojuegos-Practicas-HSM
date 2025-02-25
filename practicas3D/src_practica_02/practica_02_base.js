@@ -101,14 +101,24 @@ const colorsWireCube = [
 	white, white, white, white, white,
 ];
 
-const colorsCube = [	
-	lightblue, lightblue, lightblue, lightblue, lightblue, lightblue,
-	lightgreen, lightgreen, lightgreen, lightgreen, lightgreen, lightgreen,
-	lightred, lightred, lightred, lightred, lightred, lightred,
-	blue, blue, blue, blue, blue, blue,
-	red, red, red, red, red, red,
-	green, green, green, green, green, green,
-];	
+
+function colorCubo(nivelRojo){
+	return [
+		[nivelRojo, 0.0, 1 - nivelRojo, 1.0], [nivelRojo, 0.0, 1 - nivelRojo, 1.0], [nivelRojo, 0.0, 1 - nivelRojo, 1.0],
+		[nivelRojo, 0.0, 1 - nivelRojo, 1.0], [nivelRojo, 0.0, 1 - nivelRojo, 1.0], [nivelRojo, 0.0, 1 - nivelRojo, 1.0],
+		[nivelRojo, 0.0, 1 - nivelRojo, 1.0], [nivelRojo, 0.0, 1 - nivelRojo, 1.0], [nivelRojo, 0.0, 1 - nivelRojo, 1.0],
+		[nivelRojo, 0.0, 1 - nivelRojo, 1.0], [nivelRojo, 0.0, 1 - nivelRojo, 1.0], [nivelRojo, 0.0, 1 - nivelRojo, 1.0],
+		[nivelRojo, 0.0, 1 - nivelRojo, 1.0], [nivelRojo, 0.0, 1 - nivelRojo, 1.0], [nivelRojo, 0.0, 1 - nivelRojo, 1.0],
+		[nivelRojo, 0.0, 1 - nivelRojo, 1.0], [nivelRojo, 0.0, 1 - nivelRojo, 1.0], [nivelRojo, 0.0, 1 - nivelRojo, 1.0],
+		[nivelRojo, 0.0, 1 - nivelRojo, 1.0], [nivelRojo, 0.0, 1 - nivelRojo, 1.0], [nivelRojo, 0.0, 1 - nivelRojo, 1.0],
+		[nivelRojo, 0.0, 1 - nivelRojo, 1.0], [nivelRojo, 0.0, 1 - nivelRojo, 1.0], [nivelRojo, 0.0, 1 - nivelRojo, 1.0],
+		[nivelRojo, 0.0, 1 - nivelRojo, 1.0], [nivelRojo, 0.0, 1 - nivelRojo, 1.0], [nivelRojo, 0.0, 1 - nivelRojo, 1.0],
+		[nivelRojo, 0.0, 1 - nivelRojo, 1.0], [nivelRojo, 0.0, 1 - nivelRojo, 1.0], [nivelRojo, 0.0, 1 - nivelRojo, 1.0],
+		[nivelRojo, 0.0, 1 - nivelRojo, 1.0], [nivelRojo, 0.0, 1 - nivelRojo, 1.0], [nivelRojo, 0.0, 1 - nivelRojo, 1.0],
+		[nivelRojo, 0.0, 1 - nivelRojo, 1.0], [nivelRojo, 0.0, 1 - nivelRojo, 1.0], [nivelRojo, 0.0, 1 - nivelRojo, 1.0],
+	]
+};
+
 
 //----------------------------------------------------------------------------
 // OTHER DATA 
@@ -133,48 +143,63 @@ var programInfo = {
 			attribLocations: {},
 };
 
+var numObjects = 20; // Número de objetos que quieres crear
+var limitePosicion = 5;
 var objectsToDraw = [
-		{
-		  programInfo: programInfo,
-		  pointsArray: pointsAxes, 
-		  colorsArray: colorsAxes, 
-		  uniforms: {
-			u_colorMult: [1.0, 1.0, 1.0, 1.0],
-			u_model: new mat4(),
-		  },
-		  primType: "lines",
-		},
-		{
-		  programInfo: programInfo,
-		  pointsArray: pointsWireCube,
-		  colorsArray: colorsWireCube, 
-		  uniforms: {
-			u_colorMult: [1.0, 1.0, 1.0, 1.0],
-			u_model: new mat4(),
-		  },
-		  primType: "line_strip",
-		},	
-		{
-		  programInfo: programInfo,
-		  pointsArray: pointsCube, 
-		  colorsArray: colorsCube, 
-		  uniforms: {
-			u_colorMult: [1.0, 1.0, 1.0, 1.0],
-			u_model: new mat4(),
-		  },
-		  primType: "triangles",
-		},		
-		{
-		  programInfo: programInfo,
-		  pointsArray: pointsCube, 
-		  colorsArray: colorsCube, 
-		  uniforms: {
-			u_colorMult: [0.5, 0.5, 0.5, 1.0],
-			u_model: new mat4(),
-		  },
-		  primType: "triangles",
-		},				
+	{
+	  programInfo: programInfo,
+	  pointsArray: pointsAxes, 
+	  colorsArray: colorsAxes, 
+	  uniforms: {
+		u_colorMult: [1.0, 1.0, 1.0, 1.0],
+		u_model: new mat4(),
+	  },
+	  primType: "lines",
+	},
+	
 ];
+var posicionesCubos = [];
+var ejesTraslacion = [];
+
+function numAleatorio(min, max) {
+	return Math.floor(Math.random() * (max - min + 1) + min); // +1 para incluir 'n' en el rango
+};
+
+function posicionAleatoria(){
+	return numAleatorio(-limitePosicion, limitePosicion);
+}
+
+for (let i = 0; i < numObjects; i++) {
+	let num = numAleatorio(0,2);
+	ejesTraslacion.push(num);
+
+	if (num % 3 == 0) {
+    	posicionesCubos.push(translate(0, posicionAleatoria(), posicionAleatoria()));
+	} else if (num % 3 == 1) {
+		posicionesCubos.push(translate(posicionAleatoria(), 0, posicionAleatoria()));
+	} else {
+		posicionesCubos.push(translate(posicionAleatoria(), posicionAleatoria(), 0));
+	}
+}
+
+for (let i = 0; i < numObjects; i++) {
+	
+    let object = {
+        programInfo: programInfo,
+        pointsArray: pointsCube, // O cualquier otro conjunto de puntos que quieras usar
+        colorsArray: colorCubo((1/numObjects)*i), // O colores específicos
+        uniforms: {
+            u_colorMult: [1.0, 1.0, 1.0, 1.0], // Diferentes colores dependiendo del índice
+            u_model: new mat4(),  // Transformación del modelo, que se actualizará más tarde
+        },
+        primType: "triangles", // Tipo de primitiva (por ejemplo, triángulos)
+    };
+
+    // Puedes hacer cosas como modificar las transformaciones en la matriz de modelo dependiendo del índice
+    object.uniforms.u_model = posicionesCubos[i]; // Mueve cada cubo a una posición diferente en el eje X
+
+    objectsToDraw.push(object); // Agrega el objeto creado al array
+}
 
 //----------------------------------------------------------------------------
 // Initialization function
@@ -244,14 +269,45 @@ function render() {
 	//----------------------------------------------------------------------------
 
 	let ejeY = vec3(0.0, 1.0, 0.0);
-	let R = rotate(rotAngle, ejeY);	
+	let ejeX = vec3(1.0, 0.0, 0.0);
+	let ejeZ = vec3(0.0, 0.0, 1.0);
+	
+	let RY = rotate(rotAngle, ejeY);
+	let RX = rotate(rotAngle, ejeX);
+	let RZ = rotate(rotAngle, ejeZ);	
 
+
+	/*
 	objectsToDraw[2].uniforms.u_model = translate(1.0, 1.0, 3.0);
 	objectsToDraw[2].uniforms.u_model = mult(objectsToDraw[2].uniforms.u_model, R);
 	
 	objectsToDraw[3].uniforms.u_model = translate(1.0, 0.0, 3.0);
 	objectsToDraw[3].uniforms.u_model = mult(R, objectsToDraw[3].uniforms.u_model);
-	
+	*/
+
+	for (let i = 1; i < numObjects + 1; i++) {
+		objectsToDraw[i].uniforms.u_model = posicionesCubos[i-1];
+		//objectsToDraw[i].uniforms.u_model = translate(1.0, 1.0, 3.0);
+
+		if(ejesTraslacion[i-1] == 0){
+			objectsToDraw[i].uniforms.u_model = mult(RX, objectsToDraw[i].uniforms.u_model);
+			//objectsToDraw[i].uniforms.u_model = mult(objectsToDraw[i].uniforms.u_model, RY);
+			objectsToDraw[i].uniforms.u_model = mult(objectsToDraw[i].uniforms.u_model, RZ);
+
+		} else if (ejesTraslacion[i-1] == 1){
+			objectsToDraw[i].uniforms.u_model = mult(RY, objectsToDraw[i].uniforms.u_model);
+			//objectsToDraw[i].uniforms.u_model = mult(objectsToDraw[i].uniforms.u_model, RZ);
+			objectsToDraw[i].uniforms.u_model = mult(objectsToDraw[i].uniforms.u_model, RX);
+
+		} else {
+			objectsToDraw[i].uniforms.u_model = mult(RZ, objectsToDraw[i].uniforms.u_model);
+			//objectsToDraw[i].uniforms.u_model = mult(objectsToDraw[i].uniforms.u_model,RX);
+			objectsToDraw[i].uniforms.u_model = mult(objectsToDraw[i].uniforms.u_model,RY);
+		}
+
+	}
+
+
 	//----------------------------------------------------------------------------
 	// DRAW
 	//----------------------------------------------------------------------------
