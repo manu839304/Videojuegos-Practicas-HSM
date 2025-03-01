@@ -119,6 +119,14 @@ function colorCubo(nivelRojo){
 	]
 };
 
+const colorsCube = [	
+	lightblue, lightblue, lightblue, lightblue, lightblue, lightblue,
+	lightgreen, lightgreen, lightgreen, lightgreen, lightgreen, lightgreen,
+	lightred, lightred, lightred, lightred, lightred, lightred,
+	blue, blue, blue, blue, blue, blue,
+	red, red, red, red, red, red,
+	green, green, green, green, green, green,
+];
 
 //----------------------------------------------------------------------------
 // OTHER DATA 
@@ -131,7 +139,9 @@ var projection = new mat4();	// create a projection matrix and set it to the ide
 var eye, target, up;			// for view matrix
 
 var rotAngle = 0.0;
-var rotChange = 0.5;
+var trasAngle = 0.0;
+var rotChange = 1.5;
+var trasChange = 0.5;
 
 var program;
 var uLocations = {};
@@ -144,7 +154,7 @@ var programInfo = {
 };
 
 var numObjects = 20; // Número de objetos que quieres crear
-var limitePosicion = 5;
+var limitePosicion = 8;
 var objectsToDraw = [
 	{
 	  programInfo: programInfo,
@@ -158,27 +168,49 @@ var objectsToDraw = [
 	},
 	
 ];
+
 var posicionesCubos = [];
 var ejesTraslacion = [];
+var rotaciones = [];
+var velRotaciones = [];
+var traslaciones = [];
+var velTraslaciones = [];
 
-function numAleatorio(min, max) {
+
+function numAleatorioEntero(min, max) {
 	return Math.floor(Math.random() * (max - min + 1) + min); // +1 para incluir 'n' en el rango
 };
 
+function numAleatorioFloat(min, max) {
+	return Math.random() * (max - min + 1) + min; // +1 para incluir 'n' en el rango
+};
+
 function posicionAleatoria(){
-	return numAleatorio(-limitePosicion, limitePosicion);
+	let rand = numAleatorioEntero(1, limitePosicion);
+	let signo = numAleatorioEntero(0, 1);
+	if(signo == 1){
+		rand = -rand;
+	}
+	return rand;
 }
 
 for (let i = 0; i < numObjects; i++) {
-	let num = numAleatorio(0,2);
+	let num = numAleatorioEntero(0,2);
 	ejesTraslacion.push(num);
 
-	if (num % 3 == 0) {
-    	posicionesCubos.push(translate(0, posicionAleatoria(), posicionAleatoria()));
-	} else if (num % 3 == 1) {
-		posicionesCubos.push(translate(posicionAleatoria(), 0, posicionAleatoria()));
-	} else {
-		posicionesCubos.push(translate(posicionAleatoria(), posicionAleatoria(), 0));
+	rotaciones.push(0);
+	traslaciones.push(0);
+
+	velRotaciones.push(numAleatorioFloat(0.5, 1.5));
+	velTraslaciones.push(numAleatorioFloat(0.5, 1.0));
+
+
+	if (num % 3 == 0) { // eje X
+    	posicionesCubos.push(translate(0, posicionAleatoria(), 0));
+	} else if (num % 3 == 1) { // eje Y
+		posicionesCubos.push(translate(0, 0, posicionAleatoria()));
+	} else { // eje Z
+		posicionesCubos.push(translate(posicionAleatoria(), 0, 0));
 	}
 }
 
@@ -268,43 +300,58 @@ function render() {
 	// MOVE STUFF AROUND
 	//----------------------------------------------------------------------------
 
-	let ejeY = vec3(0.0, 1.0, 0.0);
 	let ejeX = vec3(1.0, 0.0, 0.0);
+	let ejeY = vec3(0.0, 1.0, 0.0);
 	let ejeZ = vec3(0.0, 0.0, 1.0);
-	
-	let RY = rotate(rotAngle, ejeY);
-	let RX = rotate(rotAngle, ejeX);
-	let RZ = rotate(rotAngle, ejeZ);	
 
 
 	/*
 	objectsToDraw[2].uniforms.u_model = translate(1.0, 1.0, 3.0);
-	objectsToDraw[2].uniforms.u_model = mult(objectsToDraw[2].uniforms.u_model, R);
+	objectsToDraw[2].uniforms.u_model = mult(objectsToDraw[2].uniforms.u_model, R); // rotacion
 	
 	objectsToDraw[3].uniforms.u_model = translate(1.0, 0.0, 3.0);
-	objectsToDraw[3].uniforms.u_model = mult(R, objectsToDraw[3].uniforms.u_model);
+	objectsToDraw[3].uniforms.u_model = mult(R, objectsToDraw[3].uniforms.u_model); // traslacion
 	*/
 
 	for (let i = 1; i < numObjects + 1; i++) {
-		objectsToDraw[i].uniforms.u_model = posicionesCubos[i-1];
-		//objectsToDraw[i].uniforms.u_model = translate(1.0, 1.0, 3.0);
+		//objectsToDraw[i].uniforms.u_model = translate(0.0, 0.0, 0.0);
 
-		if(ejesTraslacion[i-1] == 0){
-			objectsToDraw[i].uniforms.u_model = mult(RX, objectsToDraw[i].uniforms.u_model);
-			//objectsToDraw[i].uniforms.u_model = mult(objectsToDraw[i].uniforms.u_model, RY);
-			objectsToDraw[i].uniforms.u_model = mult(objectsToDraw[i].uniforms.u_model, RZ);
+		if(ejesTraslacion[i-1] == 0){ // Traslacion eje Z (azul)
+			// Rotación propia del cubo (sobre su propio eje antes de moverse)
+			objectsToDraw[i].uniforms.u_model = rotate(rotaciones[i-1], ejeZ);
+			
+			// Traslación: mover el cubo fuera del eje X a su órbita
+			let posicionInicial = posicionesCubos[i-1]; 
+			objectsToDraw[i].uniforms.u_model = mult(posicionInicial, objectsToDraw[i].uniforms.u_model);
 
-		} else if (ejesTraslacion[i-1] == 1){
-			objectsToDraw[i].uniforms.u_model = mult(RY, objectsToDraw[i].uniforms.u_model);
-			//objectsToDraw[i].uniforms.u_model = mult(objectsToDraw[i].uniforms.u_model, RZ);
-			objectsToDraw[i].uniforms.u_model = mult(objectsToDraw[i].uniforms.u_model, RX);
+			// Rotación orbital: hace que el cubo orbite alrededor del eje X
+			objectsToDraw[i].uniforms.u_model = mult(rotate(traslaciones[i-1], ejeX), objectsToDraw[i].uniforms.u_model);
+		
+		} else if (ejesTraslacion[i-1] == 1){ // Traslacion eje X (verde)
+			// Rotación propia del cubo (sobre su propio eje antes de moverse)
+			objectsToDraw[i].uniforms.u_model = rotate(rotaciones[i-1], ejeX);
 
-		} else {
-			objectsToDraw[i].uniforms.u_model = mult(RZ, objectsToDraw[i].uniforms.u_model);
-			//objectsToDraw[i].uniforms.u_model = mult(objectsToDraw[i].uniforms.u_model,RX);
-			objectsToDraw[i].uniforms.u_model = mult(objectsToDraw[i].uniforms.u_model,RY);
+			// Traslación: mover el cubo fuera del eje X a su órbita
+			let posicionInicial = posicionesCubos[i-1]; 
+			objectsToDraw[i].uniforms.u_model = mult(posicionInicial, objectsToDraw[i].uniforms.u_model);
+
+			// Rotación orbital: hace que el cubo orbite alrededor del eje X
+			objectsToDraw[i].uniforms.u_model = mult(rotate(traslaciones[i-1], ejeY), objectsToDraw[i].uniforms.u_model);
+
+		} else { // Traslacion eje Y (rojo)
+			// Rotación propia del cubo (sobre su propio eje antes de moverse)
+			objectsToDraw[i].uniforms.u_model = rotate(rotaciones[i-1], ejeY);
+
+			// Traslación: mover el cubo fuera del eje X a su órbita
+			let posicionInicial = posicionesCubos[i-1]; 
+			objectsToDraw[i].uniforms.u_model = mult(posicionInicial, objectsToDraw[i].uniforms.u_model);
+		
+			// Rotación orbital: hace que el cubo orbite alrededor del eje X
+			objectsToDraw[i].uniforms.u_model = mult(rotate(traslaciones[i-1], ejeZ), objectsToDraw[i].uniforms.u_model);
 		}
-
+		
+		rotaciones[i-1] += velRotaciones[i-1];
+		traslaciones[i-1] += velTraslaciones[i-1];
 	}
 
 
@@ -326,8 +373,9 @@ function render() {
 		gl.drawArrays(object.primitive, 0, object.pointsArray.length);
     });	
     
-	rotAngle += rotChange;
-	
+	//rotAngle += rotChange;
+	//trasAngle += trasChange;
+
 	requestAnimationFrame(render);
 	
 }
