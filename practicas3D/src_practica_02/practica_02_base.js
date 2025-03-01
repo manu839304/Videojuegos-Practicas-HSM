@@ -128,6 +128,62 @@ const colorsCube = [
 	green, green, green, green, green, green,
 ];
 
+
+function colorCubo(color){
+	let colorRGB = rainbowColor(color);
+	console.log(colorRGB);
+	colorRGB = [colorRGB[0], colorRGB[1], colorRGB[2], 1.0];
+
+	return [
+		colorRGB, colorRGB, colorRGB,
+		colorRGB, colorRGB, colorRGB,
+		colorRGB, colorRGB, colorRGB,
+		colorRGB, colorRGB, colorRGB,
+		colorRGB, colorRGB, colorRGB,
+		colorRGB, colorRGB, colorRGB,
+		colorRGB, colorRGB, colorRGB,
+		colorRGB, colorRGB, colorRGB,
+		colorRGB, colorRGB, colorRGB,
+		colorRGB, colorRGB, colorRGB,
+		colorRGB, colorRGB, colorRGB,
+		colorRGB, colorRGB, colorRGB,
+	]
+};
+
+
+function rainbowColor(value) {
+    if (value < 0 || value > 1) {
+        throw new Error("El valor debe estar entre 0 y 1.");
+    }
+
+    let hue = value * 360; // El valor ahora se escala entre 0 y 360
+    let saturation = 1.0; // Máxima saturación para colores vivos
+    let lightness = 0.5;  // Luminosidad media
+
+    return hslToRgb(hue, saturation, lightness);
+}
+
+// Función para convertir HSL a RGB
+function hslToRgb(h, s, l) {
+    let c = (1 - Math.abs(2 * l - 1)) * s;
+    let x = c * (1 - Math.abs((h / 60) % 2 - 1));
+    let m = l - c / 2;
+    let r, g, b;
+
+    if (h < 60) { r = c; g = x; b = 0; } 
+    else if (h < 120) { r = x; g = c; b = 0; } 
+    else if (h < 180) { r = 0; g = c; b = x; } 
+    else if (h < 240) { r = 0; g = x; b = c; } 
+    else if (h < 300) { r = x; g = 0; b = c; } 
+    else { r = c; g = 0; b = x; }
+
+    return [
+        (r + m),
+        (g + m),
+        (b + m)
+    ];
+}
+
 //----------------------------------------------------------------------------
 // OTHER DATA 
 //----------------------------------------------------------------------------
