@@ -7,6 +7,170 @@
 * 
 */
 
+class Camera {
+    constructor() {
+        this.position = new vec3(0, 0, 5);
+        this.front = new vec3(0, 0, -1);
+        this.up = new vec3(0, 1, 0);
+        
+        this.yaw = -90;   // Mirando hacia -Z
+        this.pitch = 0;
+        
+        this.speed = 2.0;
+        this.sensitivity = 0.2;
+        this.fov = 45;    // Solo en perspectiva
+        this.projectionType = 'perspective';
+
+        this.mouseDown = false;
+        this.lastMouseX = null;
+        this.lastMouseY = null;
+
+        this.initEventListeners();
+    }
+
+    getViewMatrix() {
+        let target = vec3();
+		target[0] = this.position[0] + this.front[0]
+		target[1] = this.position[1] + this.front[1]
+		target[2] = this.position[2] + this.front[2]
+
+        //add(target, this.position, this.front);
+        return lookAt(vec3(), this.position, target, this.up);
+    }
+
+    getProjectionMatrix(aspectRatio) {
+        if (this.projectionType === 'perspective') {
+            return perspective(mat4(), this.fov * Math.PI / 180, aspectRatio, 0.1, 100);
+        } else {
+            let orthoSize = 5;
+            return ortho(mat4(), -orthoSize, orthoSize, -orthoSize, orthoSize, 0.1, 100);
+        }
+    }
+
+    processKeyboard(key) {
+        let velocity = this.speed;
+        let right = vec3();
+        right = cross(this.front, this.up);
+        normalize(right);
+		console.log("\n===============")		
+		console.log("position: ", this.position);
+		console.log("front: ", this.front);
+		console.log("right: ", right);
+		console.log("velocity: ", velocity);
+
+        let move = vec3();
+        if (key === 'ArrowUp') {
+			console.log("Arriba");
+			move[0] += this.front[0] * velocity;
+			move[1] += this.front[1] * velocity;
+			move[2] += this.front[2] * velocity;
+		}
+		
+		if (key === 'ArrowDown') {
+			console.log("Abajo");
+
+			move[0] -= this.front[0] * velocity;
+			move[1] -= this.front[1] * velocity;
+			move[2] -= this.front[2] * velocity;
+		}
+		
+		if (key === 'ArrowLeft') {
+			console.log("Izq");
+
+			move[0] -= right[0] * velocity;
+			move[1] -= right[1] * velocity;
+			move[2] -= right[2] * velocity;
+		}
+		
+		if (key === 'ArrowRight') {
+			console.log("Dcha");
+
+			move[0] += right[0] * velocity;
+			move[1] += right[1] * velocity;
+			move[2] += right[2] * velocity;
+		}
+		
+		
+		console.log("BEFORE\nmove: ", move);
+		console.log("post-position: ", this.position);
+
+		this.position[0] += move[0];
+		this.position[1] += move[1];
+		this.position[2] += move[2];
+
+		console.log("AFTER\nmove: ", move);
+		console.log("post-position: ", this.position);
+    }
+
+    processMouseMovement(xOffset, yOffset) {
+		console.log("Movido raton");
+
+        this.yaw += xOffset * this.sensitivity;
+        this.pitch -= yOffset * this.sensitivity;
+        this.pitch = Math.max(-89, Math.min(89, this.pitch));
+
+        let direction = vec3();
+        direction[0] = Math.cos(this.yaw * Math.PI / 180) * Math.cos(this.pitch * Math.PI / 180);
+        direction[1] = Math.sin(this.pitch * Math.PI / 180);
+        direction[2] = Math.sin(this.yaw * Math.PI / 180) * Math.cos(this.pitch * Math.PI / 180);
+        normalize(this.front, direction);
+    }
+
+    processScroll(delta) {
+        if (this.projectionType === 'perspective') {
+            this.fov -= delta;
+            this.fov = Math.max(20, Math.min(80, this.fov));
+        }
+    }
+
+    switchProjection(mode) {
+        if (mode === 'p'){
+			console.log("P");
+			this.projectionType = 'perspective';
+		}
+        if (mode === 'o'){
+			console.log("O");
+			this.projectionType = 'ortho';
+		}
+    }
+
+    initEventListeners() {
+        window.addEventListener('keydown', (e) => {
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
+                this.processKeyboard(e.code);
+            } else if (e.code === 'KeyP') {
+                this.switchProjection('p');
+            } else if (e.code === 'KeyO') {
+                this.switchProjection('o');
+            } else if (e.code === 'Equal') {
+                this.processScroll(-5);
+            } else if (e.code === 'Minus') {
+                this.processScroll(5);
+            }
+        });
+
+        window.addEventListener('mousedown', (e) => {
+            this.mouseDown = true;
+            this.lastMouseX = e.clientX;
+            this.lastMouseY = e.clientY;
+        });
+
+        window.addEventListener('mouseup', () => {
+            this.mouseDown = false;
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (!this.mouseDown) return;
+            let xOffset = e.clientX - this.lastMouseX;
+            let yOffset = e.clientY - this.lastMouseY;
+            this.processMouseMovement(xOffset, yOffset);
+            this.lastMouseX = e.clientX;
+            this.lastMouseY = e.clientY;
+        });
+    }
+}
+
+
 // Variable to store the WebGL rendering context
 var gl;
 
@@ -131,7 +295,6 @@ const colorsCube = [
 
 function colorCubo(color){
 	let colorRGB = rainbowColor(color);
-	console.log(colorRGB);
 	colorRGB = [colorRGB[0], colorRGB[1], colorRGB[2], 1.0];
 
 	return [
@@ -331,7 +494,7 @@ window.onload = function init() {
 
 	// Set up camera
 	// Projection matrix
-	projection = perspective( 45.0, canvas.width/canvas.height, 0.1, 100.0 );
+	projection = perspective( 45.0, gl.drawingBufferWidth/gl.drawingBufferHeight, 0.1, 100.0 );
 	gl.uniformMatrix4fv( programInfo.uniformLocations.projection, gl.FALSE, projection ); // copy projection to uniform value in shader
     // View matrix (static cam)
 	eye = vec3(-5.0, 5.0, 10.0);
@@ -348,6 +511,8 @@ window.onload = function init() {
 // Rendering Event Function
 //----------------------------------------------------------------------------
 
+const camera = new Camera();
+
 function render() {
 
 	gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT);
@@ -355,54 +520,45 @@ function render() {
 	//----------------------------------------------------------------------------
 	// MOVE STUFF AROUND
 	//----------------------------------------------------------------------------
+	let viewMatrix = camera.getViewMatrix();
+	let projectionMatrix = camera.getProjectionMatrix(gl.drawingBufferWidth / gl.drawingBufferHeight);
 
 	let ejeX = vec3(1.0, 0.0, 0.0);
 	let ejeY = vec3(0.0, 1.0, 0.0);
 	let ejeZ = vec3(0.0, 0.0, 1.0);
 
-
-	/*
-	objectsToDraw[2].uniforms.u_model = translate(1.0, 1.0, 3.0);
-	objectsToDraw[2].uniforms.u_model = mult(objectsToDraw[2].uniforms.u_model, R); // rotacion
-	
-	objectsToDraw[3].uniforms.u_model = translate(1.0, 0.0, 3.0);
-	objectsToDraw[3].uniforms.u_model = mult(R, objectsToDraw[3].uniforms.u_model); // traslacion
-	*/
-
 	for (let i = 1; i < numObjects + 1; i++) {
-		//objectsToDraw[i].uniforms.u_model = translate(0.0, 0.0, 0.0);
-
 		if(ejesTraslacion[i-1] == 0){ // Traslacion eje Z (azul)
-			// Rotación propia del cubo (sobre su propio eje antes de moverse)
+			// Rotación propia del cubo
 			objectsToDraw[i].uniforms.u_model = rotate(rotaciones[i-1], ejeZ);
 			
-			// Traslación: mover el cubo fuera del eje X a su órbita
+			// Traslación
 			let posicionInicial = posicionesCubos[i-1]; 
 			objectsToDraw[i].uniforms.u_model = mult(posicionInicial, objectsToDraw[i].uniforms.u_model);
 
-			// Rotación orbital: hace que el cubo orbite alrededor del eje X
+			// Rotación orbital
 			objectsToDraw[i].uniforms.u_model = mult(rotate(traslaciones[i-1], ejeX), objectsToDraw[i].uniforms.u_model);
 		
 		} else if (ejesTraslacion[i-1] == 1){ // Traslacion eje X (verde)
-			// Rotación propia del cubo (sobre su propio eje antes de moverse)
+			// Rotación propia del cubo
 			objectsToDraw[i].uniforms.u_model = rotate(rotaciones[i-1], ejeX);
 
-			// Traslación: mover el cubo fuera del eje X a su órbita
+			// Traslación
 			let posicionInicial = posicionesCubos[i-1]; 
 			objectsToDraw[i].uniforms.u_model = mult(posicionInicial, objectsToDraw[i].uniforms.u_model);
 
-			// Rotación orbital: hace que el cubo orbite alrededor del eje X
+			// Rotación orbital
 			objectsToDraw[i].uniforms.u_model = mult(rotate(traslaciones[i-1], ejeY), objectsToDraw[i].uniforms.u_model);
 
 		} else { // Traslacion eje Y (rojo)
-			// Rotación propia del cubo (sobre su propio eje antes de moverse)
+			// Rotación propia del cubo
 			objectsToDraw[i].uniforms.u_model = rotate(rotaciones[i-1], ejeY);
 
-			// Traslación: mover el cubo fuera del eje X a su órbita
+			// Traslación
 			let posicionInicial = posicionesCubos[i-1]; 
 			objectsToDraw[i].uniforms.u_model = mult(posicionInicial, objectsToDraw[i].uniforms.u_model);
 		
-			// Rotación orbital: hace que el cubo orbite alrededor del eje X
+			// Rotación orbital
 			objectsToDraw[i].uniforms.u_model = mult(rotate(traslaciones[i-1], ejeZ), objectsToDraw[i].uniforms.u_model);
 		}
 		
@@ -422,18 +578,18 @@ function render() {
 		// Setup buffers and attributes
 		setBuffersAndAttributes(object.programInfo, object.pointsArray, object.colorsArray);
 
+		// AQUÍ HAY QUE CAMBIAR object.uniforms.u_view y object.uniforms.projection
+		object.uniforms.u_view = viewMatrix;
+		object.uniforms.u_projection = projectionMatrix;
+
 		// Set the uniforms
 		setUniforms(object.programInfo, object.uniforms);
 
 		// Draw
 		gl.drawArrays(object.primitive, 0, object.pointsArray.length);
     });	
-    
-	//rotAngle += rotChange;
-	//trasAngle += trasChange;
 
 	requestAnimationFrame(render);
-	
 }
 
 //----------------------------------------------------------------------------
