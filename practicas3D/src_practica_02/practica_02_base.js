@@ -9,14 +9,14 @@
 
 class Camera {
     constructor() {
-        this.position = new vec3(0, 0, 5);
+        this.position = new vec3(10, 0, 15);
         this.front = new vec3(0, 0, -1);
         this.up = new vec3(0, 1, 0);
         
         this.yaw = -90;   // Mirando hacia -Z
         this.pitch = 0;
         
-        this.speed = 2.0;
+        this.speed = 0.1;
         this.sensitivity = 0.2;
         this.fov = 45;    // Solo en perspectiva
         this.projectionType = 'perspective';
@@ -35,15 +35,15 @@ class Camera {
 		target[2] = this.position[2] + this.front[2]
 
         //add(target, this.position, this.front);
-        return lookAt(vec3(), this.position, target, this.up);
+        return lookAt(this.position, target, this.up);
     }
 
     getProjectionMatrix(aspectRatio) {
         if (this.projectionType === 'perspective') {
-            return perspective(mat4(), this.fov * Math.PI / 180, aspectRatio, 0.1, 100);
+            return perspective(this.fov * Math.PI / 180, aspectRatio, 0.1, 100);
         } else {
             let orthoSize = 5;
-            return ortho(mat4(), -orthoSize, orthoSize, -orthoSize, orthoSize, 0.1, 100);
+            return ortho(-orthoSize, orthoSize, -orthoSize, orthoSize, 0.1, 100);
         }
     }
 
@@ -51,60 +51,39 @@ class Camera {
         let velocity = this.speed;
         let right = vec3();
         right = cross(this.front, this.up);
-        normalize(right);
-		console.log("\n===============")		
-		console.log("position: ", this.position);
-		console.log("front: ", this.front);
-		console.log("right: ", right);
-		console.log("velocity: ", velocity);
+        right = normalize(right);
 
         let move = vec3();
         if (key === 'ArrowUp') {
-			console.log("Arriba");
 			move[0] += this.front[0] * velocity;
 			move[1] += this.front[1] * velocity;
 			move[2] += this.front[2] * velocity;
 		}
 		
 		if (key === 'ArrowDown') {
-			console.log("Abajo");
-
 			move[0] -= this.front[0] * velocity;
 			move[1] -= this.front[1] * velocity;
 			move[2] -= this.front[2] * velocity;
 		}
 		
 		if (key === 'ArrowLeft') {
-			console.log("Izq");
-
 			move[0] -= right[0] * velocity;
 			move[1] -= right[1] * velocity;
 			move[2] -= right[2] * velocity;
 		}
 		
 		if (key === 'ArrowRight') {
-			console.log("Dcha");
-
 			move[0] += right[0] * velocity;
 			move[1] += right[1] * velocity;
 			move[2] += right[2] * velocity;
 		}
-		
-		
-		console.log("BEFORE\nmove: ", move);
-		console.log("post-position: ", this.position);
 
 		this.position[0] += move[0];
 		this.position[1] += move[1];
 		this.position[2] += move[2];
-
-		console.log("AFTER\nmove: ", move);
-		console.log("post-position: ", this.position);
     }
 
     processMouseMovement(xOffset, yOffset) {
-		console.log("Movido raton");
-
         this.yaw += xOffset * this.sensitivity;
         this.pitch -= yOffset * this.sensitivity;
         this.pitch = Math.max(-89, Math.min(89, this.pitch));
@@ -113,13 +92,16 @@ class Camera {
         direction[0] = Math.cos(this.yaw * Math.PI / 180) * Math.cos(this.pitch * Math.PI / 180);
         direction[1] = Math.sin(this.pitch * Math.PI / 180);
         direction[2] = Math.sin(this.yaw * Math.PI / 180) * Math.cos(this.pitch * Math.PI / 180);
-        normalize(this.front, direction);
+        this.front = normalize(direction);
     }
 
     processScroll(delta) {
         if (this.projectionType === 'perspective') {
+			console.log("NOW\nfov: ",this.fov);
             this.fov -= delta;
+			console.log("NEXT\nfov: ",this.fov);
             this.fov = Math.max(20, Math.min(80, this.fov));
+			console.log("THEN\nfov: ",this.fov);
         }
     }
 
@@ -136,15 +118,16 @@ class Camera {
 
     initEventListeners() {
         window.addEventListener('keydown', (e) => {
+			console.log(e.code);
             if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
                 this.processKeyboard(e.code);
             } else if (e.code === 'KeyP') {
                 this.switchProjection('p');
             } else if (e.code === 'KeyO') {
                 this.switchProjection('o');
-            } else if (e.code === 'Equal') {
+            } else if (e.code === "BracketRight") {
                 this.processScroll(-5);
-            } else if (e.code === 'Minus') {
+            } else if (e.code === "Slash") {
                 this.processScroll(5);
             }
         });
@@ -578,7 +561,6 @@ function render() {
 		// Setup buffers and attributes
 		setBuffersAndAttributes(object.programInfo, object.pointsArray, object.colorsArray);
 
-		// AQUÍ HAY QUE CAMBIAR object.uniforms.u_view y object.uniforms.projection
 		object.uniforms.u_view = viewMatrix;
 		object.uniforms.u_projection = projectionMatrix;
 
@@ -619,6 +601,7 @@ function setUniforms(pInfo, uniforms) {
 	// Copy uniform model values to corresponding values in shaders
 	gl.uniform4f(pInfo.uniformLocations.colorMult, uniforms.u_colorMult[0], uniforms.u_colorMult[1], uniforms.u_colorMult[2], uniforms.u_colorMult[3]);
 	gl.uniformMatrix4fv(pInfo.uniformLocations.model, gl.FALSE, uniforms.u_model);
+	gl.uniformMatrix4fv(pInfo.uniformLocations.view, gl.FALSE, uniforms.u_view);
 }
 
 function setBuffersAndAttributes(pInfo, ptsArray, colArray) {
