@@ -18,7 +18,7 @@ class Camera {
         
         this.speed = 0.1;
         this.sensitivity = 0.2;
-        this.fov = 45;    // Solo en perspectiva
+        this.fov = 2000;    // Solo en perspectiva
         this.projectionType = 'perspective';
 
         this.mouseDown = false;
@@ -28,7 +28,9 @@ class Camera {
         this.initEventListeners();
     }
 
+	// Devuelve la matriz de vista, configurando la cámara en la posición actual
     getViewMatrix() {
+		//console.log("getViewMatrix");
         let target = vec3();
 		target[0] = this.position[0] + this.front[0]
 		target[1] = this.position[1] + this.front[1]
@@ -38,21 +40,27 @@ class Camera {
         return lookAt(this.position, target, this.up);
     }
 
+	// Devuelve la matriz de proyección, pudiendo ser perspectiva u ortográfica
     getProjectionMatrix(aspectRatio) {
+		//console.log("getProjectionMatrix");
         if (this.projectionType === 'perspective') {
+			console.log("perpes",this.fov);
             return perspective(this.fov * Math.PI / 180, aspectRatio, 0.1, 100);
         } else {
+			console.log("ORTHO");
             let orthoSize = 5;
             return ortho(-orthoSize, orthoSize, -orthoSize, orthoSize, 0.1, 100);
         }
     }
 
+	// Procesa el movimiento del teclado
     processKeyboard(key) {
+		//console.log("processKeyboard");
         let velocity = this.speed;
         let right = vec3();
         right = cross(this.front, this.up);
         right = normalize(right);
-
+		console.log("processKeyboard");
         let move = vec3();
         if (key === 'ArrowUp') {
 			move[0] += this.front[0] * velocity;
@@ -77,13 +85,23 @@ class Camera {
 			move[1] += right[1] * velocity;
 			move[2] += right[2] * velocity;
 		}
+		if (key === 'NumpadAdd' && this.projectionType === 'perspective') {
+			this.fov = Math.max(5, this.fov - 100);  // Mínimo FOV de 20
+			console.log(`FOV disminuido a: ${this.fov}`); // <-- Aquí
+		}
+		if (key === 'NumpadSubtract' && this.projectionType === 'perspective') {
+			this.fov = Math.min(10000, this.fov + 100);  // Máximo FOV de 80
+			console.log(`FOV aumentado a: ${this.fov}`); // <-- Aquí
+		}
 
 		this.position[0] += move[0];
 		this.position[1] += move[1];
 		this.position[2] += move[2];
     }
 
+	// Procesa el movimiento del ratón
     processMouseMovement(xOffset, yOffset) {
+		//console.log("processMouseMovement");
         this.yaw += xOffset * this.sensitivity;
         this.pitch -= yOffset * this.sensitivity;
         this.pitch = Math.max(-89, Math.min(89, this.pitch));
@@ -95,7 +113,9 @@ class Camera {
         this.front = normalize(direction);
     }
 
+	// Procesa el scroll del ratón
     processScroll(delta) {
+		//console.log("processScroll");
         if (this.projectionType === 'perspective') {
 			console.log("NOW\nfov: ",this.fov);
             this.fov -= delta;
@@ -105,7 +125,9 @@ class Camera {
         }
     }
 
+	// Cambia el tipo de proyección
     switchProjection(mode) {
+		//console.log("switchProjection");
         if (mode === 'p'){
 			console.log("P");
 			this.projectionType = 'perspective';
@@ -114,12 +136,16 @@ class Camera {
 			console.log("O");
 			this.projectionType = 'ortho';
 		}
+		console.log("Current projectionType:", this.projectionType); // <-- Agrega esto
+		
+
     }
 
+	// Inicializa los eventos del teclado y ratón
     initEventListeners() {
         window.addEventListener('keydown', (e) => {
 			console.log(e.code);
-            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight','NumpadAdd','NumpadSubtract'].includes(e.code)) {
                 this.processKeyboard(e.code);
             } else if (e.code === 'KeyP') {
                 this.switchProjection('p');
@@ -129,7 +155,8 @@ class Camera {
                 this.processScroll(-5);
             } else if (e.code === "Slash") {
                 this.processScroll(5);
-            }
+            } 
+            
         });
 
         window.addEventListener('mousedown', (e) => {
@@ -248,24 +275,6 @@ const colorsWireCube = [
 	white, white, white, white, white,
 ];
 
-
-function colorCubo(nivelRojo){
-	return [
-		[nivelRojo, 0.0, 1 - nivelRojo, 1.0], [nivelRojo, 0.0, 1 - nivelRojo, 1.0], [nivelRojo, 0.0, 1 - nivelRojo, 1.0],
-		[nivelRojo, 0.0, 1 - nivelRojo, 1.0], [nivelRojo, 0.0, 1 - nivelRojo, 1.0], [nivelRojo, 0.0, 1 - nivelRojo, 1.0],
-		[nivelRojo, 0.0, 1 - nivelRojo, 1.0], [nivelRojo, 0.0, 1 - nivelRojo, 1.0], [nivelRojo, 0.0, 1 - nivelRojo, 1.0],
-		[nivelRojo, 0.0, 1 - nivelRojo, 1.0], [nivelRojo, 0.0, 1 - nivelRojo, 1.0], [nivelRojo, 0.0, 1 - nivelRojo, 1.0],
-		[nivelRojo, 0.0, 1 - nivelRojo, 1.0], [nivelRojo, 0.0, 1 - nivelRojo, 1.0], [nivelRojo, 0.0, 1 - nivelRojo, 1.0],
-		[nivelRojo, 0.0, 1 - nivelRojo, 1.0], [nivelRojo, 0.0, 1 - nivelRojo, 1.0], [nivelRojo, 0.0, 1 - nivelRojo, 1.0],
-		[nivelRojo, 0.0, 1 - nivelRojo, 1.0], [nivelRojo, 0.0, 1 - nivelRojo, 1.0], [nivelRojo, 0.0, 1 - nivelRojo, 1.0],
-		[nivelRojo, 0.0, 1 - nivelRojo, 1.0], [nivelRojo, 0.0, 1 - nivelRojo, 1.0], [nivelRojo, 0.0, 1 - nivelRojo, 1.0],
-		[nivelRojo, 0.0, 1 - nivelRojo, 1.0], [nivelRojo, 0.0, 1 - nivelRojo, 1.0], [nivelRojo, 0.0, 1 - nivelRojo, 1.0],
-		[nivelRojo, 0.0, 1 - nivelRojo, 1.0], [nivelRojo, 0.0, 1 - nivelRojo, 1.0], [nivelRojo, 0.0, 1 - nivelRojo, 1.0],
-		[nivelRojo, 0.0, 1 - nivelRojo, 1.0], [nivelRojo, 0.0, 1 - nivelRojo, 1.0], [nivelRojo, 0.0, 1 - nivelRojo, 1.0],
-		[nivelRojo, 0.0, 1 - nivelRojo, 1.0], [nivelRojo, 0.0, 1 - nivelRojo, 1.0], [nivelRojo, 0.0, 1 - nivelRojo, 1.0],
-	]
-};
-
 const colorsCube = [	
 	lightblue, lightblue, lightblue, lightblue, lightblue, lightblue,
 	lightgreen, lightgreen, lightgreen, lightgreen, lightgreen, lightgreen,
@@ -275,7 +284,7 @@ const colorsCube = [
 	green, green, green, green, green, green,
 ];
 
-
+// Devuelve un array con los colores del cubo
 function colorCubo(color){
 	let colorRGB = rainbowColor(color);
 	colorRGB = [colorRGB[0], colorRGB[1], colorRGB[2], 1.0];
@@ -378,15 +387,17 @@ var velRotaciones = [];
 var traslaciones = [];
 var velTraslaciones = [];
 
-
+// Crea un número aleatorio entero entre 'min' y 'max'
 function numAleatorioEntero(min, max) {
 	return Math.floor(Math.random() * (max - min + 1) + min); // +1 para incluir 'n' en el rango
 };
 
+// Crea un número aleatorio flotante entre 'min' y 'max'
 function numAleatorioFloat(min, max) {
 	return Math.random() * (max - min + 1) + min; // +1 para incluir 'n' en el rango
 };
 
+// Crea una posición aleatoria en el eje X, Y o Z
 function posicionAleatoria(){
 	let rand = numAleatorioEntero(1, limitePosicion);
 	let signo = numAleatorioEntero(0, 1);
@@ -478,6 +489,7 @@ window.onload = function init() {
 	// Set up camera
 	// Projection matrix
 	projection = perspective( 45.0, gl.drawingBufferWidth/gl.drawingBufferHeight, 0.1, 100.0 );
+	//projection = ortho(-10, 10, -10, 10, 0.1, 100.0);
 	gl.uniformMatrix4fv( programInfo.uniformLocations.projection, gl.FALSE, projection ); // copy projection to uniform value in shader
     // View matrix (static cam)
 	eye = vec3(-5.0, 5.0, 10.0);
@@ -505,7 +517,30 @@ function render() {
 	//----------------------------------------------------------------------------
 	let viewMatrix = camera.getViewMatrix();
 	let projectionMatrix = camera.getProjectionMatrix(gl.drawingBufferWidth / gl.drawingBufferHeight);
+	//console.log("projectionMatrix");
+	//console.log(projectionMatrix);
 
+	//----------------------------------------------------------------------------
+	// DRAW
+	//----------------------------------------------------------------------------
+
+	objectsToDraw.forEach(function(object) {
+
+		gl.useProgram(object.programInfo.program);
+		//gl.uniformMatrix4fv(object.programInfo.uniformLocations.projection, gl.FALSE, projectionMatrix);
+		object.uniforms.u_view = viewMatrix;
+		object.uniforms.u_projection = projectionMatrix;
+
+		// Set the uniforms
+		setUniforms(object.programInfo, object.uniforms);
+		// Setup buffers and attributes
+		setBuffersAndAttributes(object.programInfo, object.pointsArray, object.colorsArray);
+
+		
+		
+		// Draw
+		gl.drawArrays(object.primitive, 0, object.pointsArray.length);
+    });	
 	let ejeX = vec3(1.0, 0.0, 0.0);
 	let ejeY = vec3(0.0, 1.0, 0.0);
 	let ejeZ = vec3(0.0, 0.0, 1.0);
@@ -550,26 +585,7 @@ function render() {
 	}
 
 
-	//----------------------------------------------------------------------------
-	// DRAW
-	//----------------------------------------------------------------------------
-
-	objectsToDraw.forEach(function(object) {
-
-		gl.useProgram(object.programInfo.program);
-
-		// Setup buffers and attributes
-		setBuffersAndAttributes(object.programInfo, object.pointsArray, object.colorsArray);
-
-		object.uniforms.u_view = viewMatrix;
-		object.uniforms.u_projection = projectionMatrix;
-
-		// Set the uniforms
-		setUniforms(object.programInfo, object.uniforms);
-
-		// Draw
-		gl.drawArrays(object.primitive, 0, object.pointsArray.length);
-    });	
+	
 
 	requestAnimationFrame(render);
 }
@@ -601,7 +617,9 @@ function setUniforms(pInfo, uniforms) {
 	// Copy uniform model values to corresponding values in shaders
 	gl.uniform4f(pInfo.uniformLocations.colorMult, uniforms.u_colorMult[0], uniforms.u_colorMult[1], uniforms.u_colorMult[2], uniforms.u_colorMult[3]);
 	gl.uniformMatrix4fv(pInfo.uniformLocations.model, gl.FALSE, uniforms.u_model);
+	gl.uniformMatrix4fv( pInfo.uniformLocations.projection, gl.FALSE, uniforms.u_projection);
 	gl.uniformMatrix4fv(pInfo.uniformLocations.view, gl.FALSE, uniforms.u_view);
+	
 }
 
 function setBuffersAndAttributes(pInfo, ptsArray, colArray) {
