@@ -20,6 +20,33 @@ var projection = new mat4();	// create a projection matrix and set it to the ide
 
 var eye, target, up;			// for view matrix
 
+const gravity = 9.8;
+const vmax = 3;
+const fuerzaMovimiento = 5;  // Cuanta fuerza aplicamos
+const masaEsfera = 1.0;        // Asumimos masa de 1 kg
+let controlForces = [0, 0, 0]; // Almacena la fuerza aplicada
+
+// Detectar teclas presionadas
+window.addEventListener("keydown", (event) => {
+    switch (event.key) {
+        case "ArrowUp":    controlForces[1] = fuerzaMovimiento; break;  // ↑ Mueve en Y+
+        case "ArrowDown":  controlForces[1] = -fuerzaMovimiento; break; // ↓ Mueve en Y-
+        case "ArrowLeft":  controlForces[0] = -fuerzaMovimiento; break; // ← Mueve en X-
+        case "ArrowRight": controlForces[0] = fuerzaMovimiento; break;  // → Mueve en X+
+    }
+});
+/*
+// Detectar cuando se suelta la tecla (detener la fuerza)
+window.addEventListener("keyup", (event) => {
+    switch (event.key) {
+        case "ArrowUp":   
+        case "ArrowDown":  controlForces[1] = 0; break;
+        case "ArrowLeft":  
+        case "ArrowRight": controlForces[0] = 0; break;
+    }
+});*/
+
+
 var planeProgramInfo = {
 	program: {},
 	uniformLocations: {},
@@ -32,120 +59,159 @@ var sphereProgramInfo = {
 	attribLocations: {},
 };
 
-// List of objects to draw
-var objectsToDraw = [
-	{
-		programInfo: planeProgramInfo,
-		pointsArray: pointsPlane, 
-		uniforms: {
-			u_color: [1.0, 1.0, 1.0, 1.0],
-			u_model: new mat4(),
-		},
-		primType: "triangles",
-	},
-	{
-		programInfo: sphereProgramInfo,
-		pointsArray: pointsSphere, 
-		uniforms: {
-			u_color: [1.0, 1.0, 1.0, 1.0],
-			u_model: new mat4(),
-		},
-		primType: "triangles",
-	},
-	{
-		programInfo: sphereProgramInfo,
-		pointsArray: pointsSphere, 
-		uniforms: {
-			u_color: [1.0, 0.5, 0.5, 1.0],
-			u_model: new mat4(),
-		},
-		primType: "triangles",
-	},
-	{
-		programInfo: sphereProgramInfo,
-		pointsArray: pointsSphere, 
-		uniforms: {
-			u_color: [0.5, 1.0, 0.5, 1.0],
-			u_model: new mat4(),
-		},
-		primType: "triangles",
-	},
-	{
-		programInfo: sphereProgramInfo,
-		pointsArray: pointsSphere, 
-		uniforms: {
-			u_color: [0.5, 0.5, 1.0, 1.0],
-			u_model: new mat4(),
-		},
-		primType: "triangles",
-	},
-	{
-		programInfo: sphereProgramInfo,
-		pointsArray: pointsSphere, 
-		uniforms: {
-			u_color: [1.0, 1.0, 0.5, 1.0],
-			u_model: new mat4(),
-		},
-		primType: "triangles",
-	},
-	{
-		programInfo: sphereProgramInfo,
-		pointsArray: pointsSphere, 
-		uniforms: {
-			u_color: [1.0, 0.5, 1.0, 1.0],
-			u_model: new mat4(),
-		},
-		primType: "triangles",
-	},
-	{
-		programInfo: sphereProgramInfo,
-		pointsArray: pointsSphere, 
-		uniforms: {
-			u_color: [0.5, 1.0, 1.0, 1.0],
-			u_model: new mat4(),
-		},
-		primType: "triangles",
-	},
-];
+var numObjects = 2;
 
-// List of spheres with their current state
-var spheres = [
-	{
-		position: [0.0, 0.0, 0.0],
+// Crea un número aleatorio entero entre 'min' y 'max'
+function numAleatorioEntero(min, max) {
+	return Math.floor(Math.random() * (max - min + 1) + min); // +1 para incluir 'n' en el rango
+};
+
+function posicionAleatoria(){
+	let rand = numAleatorioEntero(1, limitePosicion);
+	let signo = numAleatorioEntero(0, 1);
+	if(signo == 1){
+		rand = -rand;
+	}
+	return rand;
+}
+
+
+function rainbowColor(value) {
+    if (value < 0 || value > 1) {
+        throw new Error("El valor debe estar entre 0 y 1.");
+    }
+
+    let hue = value * 360; // El valor ahora se escala entre 0 y 360
+    let saturation = 1.0; // Máxima saturación para colores vivos
+    let lightness = 0.5;  // Luminosidad media
+
+    return hslToRgb(hue, saturation, lightness);
+}
+
+// Función para convertir HSL a RGB
+function hslToRgb(h, s, l) {
+    let c = (1 - Math.abs(2 * l - 1)) * s;
+    let x = c * (1 - Math.abs((h / 60) % 2 - 1));
+    let m = l - c / 2;
+    let r, g, b;
+
+    if (h < 60) { r = c; g = x; b = 0; } 
+    else if (h < 120) { r = x; g = c; b = 0; } 
+    else if (h < 180) { r = 0; g = c; b = x; } 
+    else if (h < 240) { r = 0; g = x; b = c; } 
+    else if (h < 300) { r = x; g = 0; b = c; } 
+    else { r = c; g = 0; b = x; }
+
+    return [
+        (r + m),
+        (g + m),
+        (b + m)
+    ];
+}
+
+// Devuelve un array con los colores del cubo
+function colorEsfera(color){
+	let colorRGB = rainbowColor(color);
+	colorRGB = [colorRGB[0], colorRGB[1], colorRGB[2], 1.0];
+
+	return colorRGB;
+};
+
+
+/* Si más de un plano, usar funciones
+
+// Function to calculate the center of the plane
+function calculatePlaneCenter(points) {
+    let center = [0, 0, 0];
+    points.forEach(point => {
+        center[0] += point[0];
+        center[1] += point[1];
+        center[2] += point[2];
+    });
+    center[0] /= points.length;
+    center[1] /= points.length;
+    center[2] /= points.length;
+    return center;
+}
+
+// Function to calculate the normal of the plane
+function calculatePlaneNormal(points) {
+    let v1 = subtract(points[1], points[0]);
+    let v2 = subtract(points[2], points[0]);
+    let normal = cross(v1, v2);
+    return normalize(normal);
+}
+
+// Function to calculate the size of the plane
+function calculatePlaneSize(points) {
+    let size = distance(points[0], points[2]);
+    return size;
+}
+
+// Calculate the plane properties
+let planeCenter = calculatePlaneCenter(pointsPlane);
+let planeNormal = calculatePlaneNormal(pointsPlane);
+let planeSize = calculatePlaneSize(pointsPlane);
+
+// Update the plane object
+plane.position = planeCenter;
+plane.normal = planeNormal;
+plane.size = planeSize;
+
+*/
+
+
+var plane = {
+	position: [0.0, 0.0, 0.0],
+	size: 10,
+	normal: [0.0, 0.0, 1.0],
+};
+
+var spheres = []
+for (let i = 0; i < numObjects; i++) {
+	
+    let object = {
+        position: [0.0, 0.0, 0.0],
 		rotation: [0.0, 0.0, 0.0],
+		velocity: [0.0, 0.0, 0.0],		
 		radius: 1.5,
+    };
+
+    spheres.push(object); // Agrega el objeto creado al array
+}
+
+var objectsToDraw = []
+
+
+// Metemos el plano
+objectsToDraw.push({
+	programInfo: planeProgramInfo,
+	pointsArray: pointsPlane, 
+	uniforms: {
+		u_color: [1.0, 1.0, 1.0, 1.0],
+		u_model: new mat4(),
 	},
-	{
-		position: [0.0, 0.0, 0.0],
-		rotation: [0.0, 0.0, 0.0],
-		radius: 1.5,
-	},
-	{
-		position: [0.0, 0.0, 0.0],
-		rotation: [0.0, 0.0, 0.0],
-		radius: 1.5,
-	},
-	{
-		position: [0.0, 0.0, 0.0],
-		rotation: [0.0, 0.0, 0.0],
-		radius: 1.5,
-	},
-	{
-		position: [0.0, 0.0, 0.0],
-		rotation: [0.0, 0.0, 0.0],
-		radius: 1.5,
-	},
-	{
-		position: [0.0, 0.0, 0.0],
-		rotation: [0.0, 0.0, 0.0],
-		radius: 1.5,
-	},
-	{
-		position: [0.0, 0.0, 0.0],
-		rotation: [0.0, 0.0, 0.0],
-		radius: 1.5,
-	},
-]
+	primType: "triangles",
+});
+
+
+for (let i = 0; i < numObjects; i++) {
+	colorAux=[1.0, 1.0, 1.0, 1.0];
+	if (i > 0){
+		colorAux = colorEsfera((1/numObjects)*i);
+	}
+    let object = {
+        programInfo: sphereProgramInfo,
+		pointsArray: pointsSphere, 
+		uniforms: {
+            u_color: colorAux, // Diferentes colores dependiendo del índice
+			u_model: spheres[i].position,
+		},
+		primType: "triangles",
+    };
+
+	objectsToDraw.push(object); // Agrega el objeto creado al array
+}
 
 //----------------------------------------------------------------------------
 // Initialization function
@@ -193,8 +259,16 @@ window.onload = function init() {
 
 	// Set initial positions
 	spheres.forEach(function(sphere, index) {
-		sphere.position = [5*(2*Math.random() - 1), 5*(2*Math.random() - 1), sphere.radius/2.0];
-		sphere.rotation = [Math.random()*360, Math.random()*360, Math.random()*360];
+		if(index !== 0){ // Saltamos la blanca
+			sphere.position = [5*(2*Math.random() - 1), 5*(2*Math.random() - 1), 5*(4*Math.random() - 1)];
+			/*if(sphere.uniforms.u_color[0] !== 1.0 || sphere.uniforms.u_color[1] !== 1.0 || sphere.uniforms.u_color[2] !== 1.0){
+				sphere.position = [5*(2*Math.random() - 1), 5*(2*Math.random() - 1), 5*(4*Math.random() - 1)];
+			}
+			else{
+				sphere.position = [5*(2*Math.random() - 1), 5*(2*Math.random() - 1), sphere.radius/2];
+			}*/
+			sphere.rotation = [Math.random()*360, Math.random()*360, Math.random()*360];
+		}
 	});
 
 	spheres[0].position = [0.0, 0.0, spheres[0].radius/2.0];
@@ -213,6 +287,8 @@ function tick(nowish) {
 	var now = Date.now();
 
     var dt = now - lastTick;
+	// Skip de frames para que cuando estes fuera no corra el tiempo y meta un rebote loco
+	dt = Math.min(dt, 16*4);
     lastTick = now;
 
 	update(dt)
@@ -226,8 +302,12 @@ function tick(nowish) {
 //----------------------------------------------------------------------------
 
 function update(dt) {
+	// Actualizamos plano
+	objectsToDraw[0].uniforms.u_model = scale(plane.size, plane.size, plane.size);
+	
 	// Update state
 	spheres.forEach(function(sphere, index) {
+		
 		// Update state (rotation) of the sphere
 		sphere.rotation[0] = (sphere.rotation[0] + 0.02*dt) % 360;
 		sphere.rotation[1] = (sphere.rotation[1] + 0.02*dt) % 360;
@@ -239,14 +319,81 @@ function update(dt) {
 		transform = mult(rotate(sphere.rotation[0], ejeX), transform);
 		let ejeY = vec3(0.0, 1.0, 0.0);
 		transform = mult(rotate(sphere.rotation[1], ejeY), transform);
-		let ejeZ = vec3(1.0, 0.0, 0.0);
+		let ejeZ = vec3(0.0, 0.0, 1.0);
 		transform = mult(rotate(sphere.rotation[2], ejeZ), transform);
 
-		transform = mult(translate(sphere.position[0], sphere.position[1], sphere.position[2]), transform);
+		// Update position of the sphere based in velocity
+		if(index!==0){
+			sphere.position[0] += sphere.velocity[0]*dt/1000;
+			sphere.position[1] += sphere.velocity[1]*dt/1000;
+			sphere.position[2] += sphere.velocity[2]*dt/1000; 
+			
+			// 2.1 Gravity: Update velocity of the sphere based in gravity
+			sphere.velocity[2] -= gravity * dt/1000;
+			
+			// 2.2 Check sphere-plane collision
 
+			let sphereToPlane = Array.from(subtract(sphere.position, plane.position));
+
+			// Distancia de la esfera al plano				
+			let d = (sphereToPlane[0] * plane.normal[0]) +
+					(sphereToPlane[1] * plane.normal[1]) +
+					(sphereToPlane[2] * plane.normal[2]);
+			
+			if (d <= sphere.radius){
+
+				/* 
+				
+				*/
+				sphere.velocity[2] = -sphere.velocity[2]*0.95;
+				sphere.position[2] = sphere.radius;
+				/*
+				let withinPlaneBounds = Math.abs(sphere.position[0] - plane.position[0]) <= plane.size  &&
+                        Math.abs(sphere.position[1] - plane.position[1]) <= plane.size; 
+				*/
+
+				// Punto interseccion
+				let intersectionPoint = [
+					sphere.position[0] - (d - sphere.radius) * plane.normal[0],
+					sphere.position[1] - (d - sphere.radius) * plane.normal[1],
+					sphere.position[2] - (d - sphere.radius) * plane.normal[2]
+				];
+				
+				console.log(intersectionPoint)
+			}
+		}
+		/*
+		else{
+			// Cálculo de aceleración (F = m * a  →  a = F/m)
+			let acceleration = [
+				controlForces[0] / masaEsfera,
+				controlForces[1] / masaEsfera,
+				0  // No aplicamos fuerza en Z
+			];
+		
+			// Actualizar velocidad
+			sphere.velocity[0] += acceleration[0] * dt / 1000;
+			sphere.velocity[1] += acceleration[1] * dt / 1000;
+		
+			// Limitar la velocidad máxima
+			sphere.velocity[0] = Math.max(-vmax, Math.min(vmax, sphere.velocity[0]));
+			sphere.velocity[1] = Math.max(-vmax, Math.min(vmax, sphere.velocity[1]));
+		
+			// Actualizar posición basada en la velocidad
+			sphere.position[0] += sphere.velocity[0] * dt / 1000;
+			sphere.position[1] += sphere.velocity[1] * dt / 1000;
+			sphere.position[2] += sphere.velocity[2] * dt / 1000;
+		
+			// Aplicar gravedad en Z
+			sphere.velocity[2] -= gravity * dt / 1000;
+		}*/
+		
+
+		transform = mult(translate(sphere.position[0], sphere.position[1], sphere.position[2]), transform);
+		
 		// Skip the plane
 		index += 1;
-
+				
 		objectsToDraw[index].uniforms.u_model = transform;
 	});
 }
