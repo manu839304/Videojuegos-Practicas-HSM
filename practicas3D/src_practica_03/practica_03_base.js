@@ -7,6 +7,10 @@
 * 
 */
 
+// Eje X (izquierda)
+// Eje Y (delante)
+// Eje Z (arriba)
+
 // Variable to store the WebGL rendering context
 var gl;
 
@@ -59,7 +63,7 @@ var sphereProgramInfo = {
 	attribLocations: {},
 };
 
-var numObjects = 2;
+var numObjects = 20;
 
 // Crea un número aleatorio entero entre 'min' y 'max'
 function numAleatorioEntero(min, max) {
@@ -359,7 +363,6 @@ function update(dt) {
 					sphere.position[2] - (d - sphere.radius) * plane.normal[2]
 				];
 				
-				console.log(intersectionPoint)
 			}
 		}
 		/*
