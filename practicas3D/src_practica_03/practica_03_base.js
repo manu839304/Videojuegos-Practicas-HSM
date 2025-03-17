@@ -63,7 +63,7 @@ var sphereProgramInfo = {
 	attribLocations: {},
 };
 
-var numObjects = 20;
+var numObjects = 1;
 
 // Crea un número aleatorio entero entre 'min' y 'max'
 function numAleatorioEntero(min, max) {
@@ -80,7 +80,7 @@ function posicionAleatoria(){
 }
 
 
-function rainbowColor(value) {
+function rainbowSphereColor(value) {
     if (value < 0 || value > 1) {
         throw new Error("El valor debe estar entre 0 y 1.");
     }
@@ -91,6 +91,20 @@ function rainbowColor(value) {
 
     return hslToRgb(hue, saturation, lightness);
 }
+
+
+function rainbowPlaneColor(value) {
+    if (value < 0 || value > 1) {
+        throw new Error("El valor debe estar entre 0 y 1.");
+    }
+
+    let hue = value * 360; // El valor ahora se escala entre 0 y 360
+    let saturation = 0.75; // Máxima saturación para colores vivos
+    let lightness = 0.35;  // Luminosidad media
+
+    return hslToRgb(hue, saturation, lightness);
+}
+
 
 // Función para convertir HSL a RGB
 function hslToRgb(h, s, l) {
@@ -115,7 +129,15 @@ function hslToRgb(h, s, l) {
 
 // Devuelve un array con los colores del cubo
 function colorEsfera(color){
-	let colorRGB = rainbowColor(color);
+	let colorRGB = rainbowSphereColor(color);
+	colorRGB = [colorRGB[0], colorRGB[1], colorRGB[2], 1.0];
+
+	return colorRGB;
+};
+
+// Devuelve un array con los colores del cubo
+function colorPlano(color){
+	let colorRGB = rainbowPlaneColor(color);
 	colorRGB = [colorRGB[0], colorRGB[1], colorRGB[2], 1.0];
 
 	return colorRGB;
@@ -164,12 +186,41 @@ plane.size = planeSize;
 
 */
 
+s = 10;
 
-var plane = {
-	position: [0.0, 0.0, 0.0],
-	size: 10,
-	normal: [0.0, 0.0, 1.0],
-};
+var planes = [
+    // Suelo
+    {
+        position: [0.0, 0.0, 0.0],
+        size: s,
+        normal: [0.0, 0.0, 1.0],  // Normal hacia arriba (Z+)
+    },
+    // Pared izquierda
+    {
+        position: [0, s, s],
+        size: s,
+        normal: [1.0, 0.0, 0.0],  // Normal hacia la derecha (X+)
+    },
+    // Pared derecha
+    {
+        position: [0, -s, s],
+        size: s,
+        normal: [-1.0, 0.0, 0.0],  // Normal hacia la izquierda (X-)
+    },
+    // Pared delantera
+    {
+        position: [-s, 0.0, s],
+        size: s,
+        normal: [-1.0, 0.0, 0.0],  // Normal hacia la izquierda (X-)
+    },
+    // Pared trasera
+    {
+       position: [s, 0.0, s],
+       size: s,
+       normal: [-1.0, 0.0, 0.0],  // Normal hacia la izquierda (X-)
+    }
+];
+
 
 var spheres = []
 for (let i = 0; i < numObjects; i++) {
@@ -187,16 +238,22 @@ for (let i = 0; i < numObjects; i++) {
 var objectsToDraw = []
 
 
-// Metemos el plano
-objectsToDraw.push({
-	programInfo: planeProgramInfo,
-	pointsArray: pointsPlane, 
-	uniforms: {
-		u_color: [1.0, 1.0, 1.0, 1.0],
-		u_model: new mat4(),
-	},
-	primType: "triangles",
-});
+for (let i = 0; i < planes.length; i++) {
+	colorAux = colorPlano((1/planes.length)*i);
+
+	let object = {
+        programInfo: planeProgramInfo,
+        pointsArray: pointsPlane, // Usamos el mismo modelo de puntos para cada plano
+        uniforms: {
+            u_color: colorAux,
+            u_model: new mat4(),
+        },
+        primType: "triangles",
+    };
+
+	objectsToDraw.push(object); // Agrega el objeto creado al array
+}
+
 
 
 for (let i = 0; i < numObjects; i++) {
@@ -216,6 +273,7 @@ for (let i = 0; i < numObjects; i++) {
 
 	objectsToDraw.push(object); // Agrega el objeto creado al array
 }
+
 
 //----------------------------------------------------------------------------
 // Initialization function
@@ -277,6 +335,35 @@ window.onload = function init() {
 
 	spheres[0].position = [0.0, 0.0, spheres[0].radius/2.0];
 	
+	// x = delante/atrás, y = izquierda/derecha, z = arriba/abajo
+
+	// Actualiza los modelos de los planos
+	planes.forEach(function(plane, index) {
+		// Comienza la transformación con la traslación
+		let transform = mat4(); // Inicializa la matriz de transformación
+
+		// Aplicar rotaciones dependiendo del índice
+		if (index === 0) {  // Suelo
+			//transform = rotate(0, vec3(0, 0, 0));  // No rotar
+		} else if (index === 1) {  // Izquierda
+			transform = rotate(90, vec3(1, 0, 0));  // Rota 90 grados en Y
+		} else if (index === 2) {  // Derecha
+			transform = rotate(-90, vec3(1, 0, 0));  // Rota -90 grados en Y (para el lado derecho)
+		} else if (index === 3) {  // Trasera
+			transform = rotate(90, vec3(0, 1, 0));  // Rota -90 grados en Y (para el lado derecho)
+		} else if (index === 4) {  // Delantera
+			transform = rotate(-90, vec3(0, 1, 0));  // Rota -90 grados en Y (para el lado derecho)
+		}
+
+		transform = mult(transform, translate(plane.position[0], plane.position[1], plane.position[2]));
+		transform = mult(transform, scale(plane.size, plane.size, 1));  // Ajusta la escala en X, Y y Z
+
+		console.log(transform)
+		// Actualiza el modelo del plano
+		objectsToDraw[index].uniforms.u_model = transform;
+	});
+
+
 	lastTick = Date.now();
 	requestAnimFrame(tick);
 };
@@ -305,12 +392,11 @@ function tick(nowish) {
 // Update Event Function
 //----------------------------------------------------------------------------
 
-function update(dt) {
-	// Actualizamos plano
-	objectsToDraw[0].uniforms.u_model = scale(plane.size, plane.size, plane.size);
-	
+function update(dt) {	
+	index = planes.length;
+
 	// Update state
-	spheres.forEach(function(sphere, index) {
+	spheres.forEach(sphere => {
 		
 		// Update state (rotation) of the sphere
 		sphere.rotation[0] = (sphere.rotation[0] + 0.02*dt) % 360;
@@ -337,18 +423,16 @@ function update(dt) {
 			
 			// 2.2 Check sphere-plane collision
 
-			let sphereToPlane = Array.from(subtract(sphere.position, plane.position));
+			let sphereToPlane = Array.from(subtract(sphere.position, planes[0].position));
 
 			// Distancia de la esfera al plano				
-			let d = (sphereToPlane[0] * plane.normal[0]) +
-					(sphereToPlane[1] * plane.normal[1]) +
-					(sphereToPlane[2] * plane.normal[2]);
+			let d = (sphereToPlane[0] * planes[0].normal[0]) +
+					(sphereToPlane[1] * planes[0].normal[1]) +
+					(sphereToPlane[2] * planes[0].normal[2]);
 			
 			if (d <= sphere.radius){
 
-				/* 
 				
-				*/
 				sphere.velocity[2] = -sphere.velocity[2]*0.95;
 				sphere.position[2] = sphere.radius;
 				/*
@@ -358,9 +442,9 @@ function update(dt) {
 
 				// Punto interseccion
 				let intersectionPoint = [
-					sphere.position[0] - (d - sphere.radius) * plane.normal[0],
-					sphere.position[1] - (d - sphere.radius) * plane.normal[1],
-					sphere.position[2] - (d - sphere.radius) * plane.normal[2]
+					sphere.position[0] - (d - sphere.radius) * planes[0].normal[0],
+					sphere.position[1] - (d - sphere.radius) * planes[0].normal[1],
+					sphere.position[2] - (d - sphere.radius) * planes[0].normal[2]
 				];
 				
 			}
@@ -394,10 +478,9 @@ function update(dt) {
 
 		transform = mult(translate(sphere.position[0], sphere.position[1], sphere.position[2]), transform);
 		
-		// Skip the plane
-		index += 1;
-				
 		objectsToDraw[index].uniforms.u_model = transform;
+		index += 1;
+
 	});
 }
 
