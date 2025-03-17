@@ -322,7 +322,7 @@ window.onload = function init() {
 	// Set initial positions
 	spheres.forEach(function(sphere, index) {
 		if(index !== 0){ // Saltamos la blanca
-			sphere.position = [5*(2*Math.random() - 1), 5*(2*Math.random() - 1), 5*(4*Math.random() - 1)];
+			sphere.position = [5*(2*Math.random() - 1), 5*(2*Math.random() - 1), (5*(4*Math.random() - 1))+5];
 			/*if(sphere.uniforms.u_color[0] !== 1.0 || sphere.uniforms.u_color[1] !== 1.0 || sphere.uniforms.u_color[2] !== 1.0){
 				sphere.position = [5*(2*Math.random() - 1), 5*(2*Math.random() - 1), 5*(4*Math.random() - 1)];
 			}
@@ -428,11 +428,11 @@ function update(dt) {
 					(sphereToPlane[1] * planes[0].normal[1]) +
 					(sphereToPlane[2] * planes[0].normal[2]);
 			
-			if (d <= sphere.radius){
+			if (d <= (sphere.radius + 0.01)){ // ponemos un umbral para que deje de botar si pierde mucha energia
 
 				
 				sphere.velocity[2] = -sphere.velocity[2]*0.95;
-				sphere.position[2] = sphere.radius;
+				sphere.position[2] += (sphere.radius - d);
 				/*
 				let withinPlaneBounds = Math.abs(sphere.position[0] - plane.position[0]) <= plane.size  &&
                         Math.abs(sphere.position[1] - plane.position[1]) <= plane.size; 
