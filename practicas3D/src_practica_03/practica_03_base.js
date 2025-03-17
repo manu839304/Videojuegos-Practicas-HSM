@@ -52,16 +52,6 @@ window.addEventListener("keyup", (event) => {
 
 	console.log("keyup:", event.key, "controlForces:", controlForces);
 });
-/*
-// Detectar cuando se suelta la tecla (detener la fuerza)
-window.addEventListener("keyup", (event) => {
-    switch (event.key) {
-        case "ArrowUp":   
-        case "ArrowDown":  controlForces[1] = 0; break;
-        case "ArrowLeft":  
-        case "ArrowRight": controlForces[0] = 0; break;
-    }
-});*/
 
 
 var planeProgramInfo = {
@@ -488,7 +478,7 @@ function update(dt) {
 			if (d <= (sphere.radius + 0.01)){ // ponemos un umbral para que deje de botar si pierde mucha energia
 
 				
-				sphere.velocity[2] = -sphere.velocity[2]*0.5;
+				sphere.velocity[2] = -sphere.velocity[2]*0.95;
 				sphere.position[2] += (sphere.radius - d);
 				/*
 				let withinPlaneBounds = Math.abs(sphere.position[0] - plane.position[0]) <= plane.size  &&
