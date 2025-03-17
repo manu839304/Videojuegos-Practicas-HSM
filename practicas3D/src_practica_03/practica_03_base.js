@@ -33,10 +33,20 @@ let controlForces = [0, 0, 0]; // Almacena la fuerza aplicada
 // Detectar teclas presionadas
 window.addEventListener("keydown", (event) => {
     switch (event.key) {
-        case "ArrowUp":    controlForces[1] = fuerzaMovimiento; break;  // ↑ Mueve en Y+
-        case "ArrowDown":  controlForces[1] = -fuerzaMovimiento; break; // ↓ Mueve en Y-
-        case "ArrowLeft":  controlForces[0] = -fuerzaMovimiento; break; // ← Mueve en X-
-        case "ArrowRight": controlForces[0] = fuerzaMovimiento; break;  // → Mueve en X+
+        case "ArrowUp":    controlForces[0] = -fuerzaMovimiento; break;  // ↑ Mueve en Y+
+        case "ArrowDown":  controlForces[0] = fuerzaMovimiento; break; // ↓ Mueve en Y-
+        case "ArrowLeft":  controlForces[1] = -fuerzaMovimiento; break; // ← Mueve en X-
+        case "ArrowRight": controlForces[1] = fuerzaMovimiento; break;  // → Mueve en X+
+    }
+});
+
+// Detectar cuando se suelta la tecla (detener la fuerza)
+window.addEventListener("keyup", (event) => {
+    switch (event.key) {
+        case "ArrowUp":   
+        case "ArrowDown":  controlForces[1] = 0; break;
+        case "ArrowLeft":  
+        case "ArrowRight": controlForces[0] = 0; break;
     }
 });
 /*
@@ -390,11 +400,56 @@ function tick(nowish) {
 // Update Event Function
 //----------------------------------------------------------------------------
 
+function checkSphereCollisions(spheres) {
+    for (let i = 0; i < spheres.length; i++) {
+        for (let j = i + 1; j < spheres.length; j++) {
+            let sphere1 = spheres[i];
+            let sphere2 = spheres[j];
+
+            // Calculate the distance between the centers of the two spheres
+            let dx = sphere1.position[0] - sphere2.position[0];
+            let dy = sphere1.position[1] - sphere2.position[1];
+            let dz = sphere1.position[2] - sphere2.position[2];
+            let distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+            // Check if the distance is less than the sum of the radii
+            if (distance < sphere1.radius + sphere2.radius) {
+                // Collision detected, apply elastic collision
+                elasticCollision(sphere1, sphere2);
+            }
+        }
+    }
+}
+
+function elasticCollision(sphere1, sphere2) {
+    // Calculate the normal vector between the two spheres
+    let normal = normalize(subtract(sphere2.position, sphere1.position));
+
+    // Calculate the relative velocity
+    let relativeVelocity = subtract(sphere2.velocity, sphere1.velocity);
+
+    // Calculate the velocity along the normal
+    let velocityAlongNormal = dot(relativeVelocity, normal);
+
+    // If the spheres are moving towards each other
+    if (velocityAlongNormal > 0) return;
+
+    // Calculate the impulse
+    let e = 1.0; // Coefficient of restitution (1 for elastic collision)
+    let j = -(1 + e) * velocityAlongNormal;
+    j /= (1 / sphere1.radius + 1 / sphere2.radius);
+
+    // Apply the impulse to change the velocities
+    let impulse = scale(j, normal);
+    sphere1.velocity = subtract(sphere1.velocity, scale(1 / sphere1.radius, impulse));
+    sphere2.velocity = add(sphere2.velocity, scale(1 / sphere2.radius, impulse));
+}
+
 function update(dt) {	
 	index = planes.length;
 
 	// Update state
-	spheres.forEach(sphere => {
+	spheres.forEach(function(sphere, i) {
 		
 		// Update state (rotation) of the sphere
 		sphere.rotation[0] = (sphere.rotation[0] + 0.02*dt) % 360;
@@ -411,7 +466,7 @@ function update(dt) {
 		transform = mult(rotate(sphere.rotation[2], ejeZ), transform);
 
 		// Update position of the sphere based in velocity
-		if(index!==0){
+		if(i!==0){
 			sphere.position[0] += sphere.velocity[0]*dt/1000;
 			sphere.position[1] += sphere.velocity[1]*dt/1000;
 			sphere.position[2] += sphere.velocity[2]*dt/1000; 
@@ -431,7 +486,7 @@ function update(dt) {
 			if (d <= (sphere.radius + 0.01)){ // ponemos un umbral para que deje de botar si pierde mucha energia
 
 				
-				sphere.velocity[2] = -sphere.velocity[2]*0.95;
+				sphere.velocity[2] = -sphere.velocity[2]*0.5;
 				sphere.position[2] += (sphere.radius - d);
 				/*
 				let withinPlaneBounds = Math.abs(sphere.position[0] - plane.position[0]) <= plane.size  &&
@@ -447,31 +502,51 @@ function update(dt) {
 				
 			}
 		}
-		/*
-		else{
-			// Cálculo de aceleración (F = m * a  →  a = F/m)
-			let acceleration = [
-				controlForces[0] / masaEsfera,
-				controlForces[1] / masaEsfera,
-				0  // No aplicamos fuerza en Z
-			];
-		
-			// Actualizar velocidad
-			sphere.velocity[0] += acceleration[0] * dt / 1000;
-			sphere.velocity[1] += acceleration[1] * dt / 1000;
-		
-			// Limitar la velocidad máxima
-			sphere.velocity[0] = Math.max(-vmax, Math.min(vmax, sphere.velocity[0]));
-			sphere.velocity[1] = Math.max(-vmax, Math.min(vmax, sphere.velocity[1]));
-		
-			// Actualizar posición basada en la velocidad
-			sphere.position[0] += sphere.velocity[0] * dt / 1000;
-			sphere.position[1] += sphere.velocity[1] * dt / 1000;
-			sphere.position[2] += sphere.velocity[2] * dt / 1000;
-		
-			// Aplicar gravedad en Z
-			sphere.velocity[2] -= gravity * dt / 1000;
-		}*/
+		else{ console.log("White Sphere - Control Forces:", controlForces); // Debugging
+            console.log("White Sphere - Velocity Before:", sphere.velocity); // Debugging
+
+            // Apply control forces to the white sphere
+            let acceleration = [
+                controlForces[0] / masaEsfera,
+                controlForces[1] / masaEsfera,
+                0  // No force applied in Z
+            ];
+
+            // Update velocity based on acceleration
+            sphere.velocity[0] += acceleration[0] * dt / 1000;
+            sphere.velocity[1] += acceleration[1] * dt / 1000;
+
+            // Limit velocity to maximum speed
+            sphere.velocity[0] = Math.max(-vmax, Math.min(vmax, sphere.velocity[0]));
+            sphere.velocity[1] = Math.max(-vmax, Math.min(vmax, sphere.velocity[1]));
+
+            // Update position based on velocity
+            sphere.position[0] += sphere.velocity[0] * dt / 1000;
+            sphere.position[1] += sphere.velocity[1] * dt / 1000;
+            sphere.position[2] += sphere.velocity[2] * dt / 1000;
+
+            console.log("White Sphere - Velocity After:", sphere.velocity); // Debugging
+            console.log("White Sphere - Position:", sphere.position); // Debugging
+
+			// Check if the sphere falls off the plane
+            let plane = planes[0]; // Assuming the first plane is the ground
+            let planeCenter = plane.position;
+            let planeSize = plane.size;
+
+            // Calculate the distance from the sphere to the plane center
+            let distanceX = Math.abs(sphere.position[0] - planeCenter[0]);
+            let distanceY = Math.abs(sphere.position[1] - planeCenter[1]);
+            let distanceZ = Math.abs(sphere.position[2] - planeCenter[2]);
+
+            // Check if the sphere is outside the plane bounds
+            if (distanceX > planeSize || distanceY > planeSize || distanceZ > planeSize) {
+                // Reset sphere position to the origin
+                sphere.position = [0.0, 0.0, spheres[0].radius/2.0]; // Reset to origin
+                sphere.velocity = [0.0, 0.0, 0.0]; // Reset velocity
+				controlForces[0] = 0; // Reset control forces
+				controlForces[1] = 0; // Reset control forces
+            }
+		}
 		
 
 		transform = mult(translate(sphere.position[0], sphere.position[1], sphere.position[2]), transform);
@@ -480,6 +555,7 @@ function update(dt) {
 		index += 1;
 
 	});
+	// Check for collisions between spheres
 }
 
 //----------------------------------------------------------------------------
@@ -527,26 +603,26 @@ function setPrimitive(objectsToDraw) {
 }	
 
 function setUniforms(pInfo, uniforms) {
-	var canvas = document.getElementById("gl-canvas");
+    var canvas = document.getElementById("gl-canvas");
 
-	// Set up camera
-	// Projection matrix
-	projection = perspective( 45.0, canvas.width/canvas.height, 0.1, 100.0 );
-	gl.uniformMatrix4fv( pInfo.uniformLocations.projection, gl.FALSE, projection ); // copy projection to uniform value in shader
-	
-	// View matrix (static cam)
-	eye = vec3(10.0, 0.0, 10.0);
-	target = vec3(0.0, 0.0, 0.0);
-	up = vec3(0.0, 0.0, 1.0);
-	view = lookAt(eye,target,up);
-	
-	gl.uniformMatrix4fv(pInfo.uniformLocations.view, gl.FALSE, view); // copy view to uniform value in shader
+    // Set up camera
+    // Projection matrix
+    projection = perspective( 45.0, canvas.width/canvas.height, 0.1, 100.0 );
+    gl.uniformMatrix4fv( pInfo.uniformLocations.projection, gl.FALSE, projection ); // copy projection to uniform value in shader
+    
+    // View matrix (dynamic cam)
+    eye = vec3(spheres[0].position[0] + 10.0, spheres[0].position[1] + 10.0, spheres[0].position[2] + 10.0); // Camera follows the white sphere
+    target = vec3(spheres[0].position[0], spheres[0].position[1], spheres[0].position[2]); // Camera looks at the white sphere
+    up = vec3(0.0, 0.0, 1.0);
+    view = lookAt(eye, target, up);
+    
+    gl.uniformMatrix4fv(pInfo.uniformLocations.view, gl.FALSE, view); // copy view to uniform value in shader
 
-	// Copy uniform model values to corresponding values in shaders
-	if (pInfo.uniformLocations.baseColor != null) {
-		gl.uniform4f(pInfo.uniformLocations.baseColor, uniforms.u_color[0], uniforms.u_color[1], uniforms.u_color[2], uniforms.u_color[3]);
-	}
-	gl.uniformMatrix4fv(pInfo.uniformLocations.model, gl.FALSE, uniforms.u_model);
+    // Copy uniform model values to corresponding values in shaders
+    if (pInfo.uniformLocations.baseColor != null) {
+        gl.uniform4f(pInfo.uniformLocations.baseColor, uniforms.u_color[0], uniforms.u_color[1], uniforms.u_color[2], uniforms.u_color[3]);
+    }
+    gl.uniformMatrix4fv(pInfo.uniformLocations.model, gl.FALSE, uniforms.u_model);
 }
 
 function setBuffersAndAttributes(pInfo, object) {
