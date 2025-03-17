@@ -80,7 +80,7 @@ var sphereProgramInfo = {
 	attribLocations: {},
 };
 
-var numObjects = 10;
+var numObjects = 3;
 
 // Crea un número aleatorio entero entre 'min' y 'max'
 function numAleatorioEntero(min, max) {
@@ -212,30 +212,30 @@ var planes = [
         size: s,
         normal: [0.0, 0.0, 1.0],  // Normal hacia arriba (Z+)
     },
-    // Pared izquierda
-    {
-        position: [0, s, s],
-        size: s,
-        normal: [1.0, 0.0, 0.0],  // Normal hacia la derecha (X+)
-    },
-    // Pared derecha
-    {
-        position: [0, -s, s],
-        size: s,
-        normal: [-1.0, 0.0, 0.0],  // Normal hacia la izquierda (X-)
-    },
-    // Pared delantera
-    {
-        position: [-s, 0.0, s],
-        size: s,
-        normal: [-1.0, 0.0, 0.0],  // Normal hacia la izquierda (X-)
-    },
-    // Pared trasera
-    {
-       position: [s, 0.0, s],
-       size: s,
-       normal: [-1.0, 0.0, 0.0],  // Normal hacia la izquierda (X-)
-    }
+    // // Pared izquierda
+    // {
+    //     position: [0, s, s],
+    //     size: s,
+    //     normal: [1.0, 0.0, 0.0],  // Normal hacia la derecha (X+)
+    // },
+    // // Pared derecha
+    // {
+    //     position: [0, -s, s],
+    //     size: s,
+    //     normal: [-1.0, 0.0, 0.0],  // Normal hacia la izquierda (X-)
+    // },
+    // // Pared delantera
+    // {
+    //     position: [-s, 0.0, s],
+    //     size: s,
+    //     normal: [-1.0, 0.0, 0.0],  // Normal hacia la izquierda (X-)
+    // },
+    // // Pared trasera
+    // {
+    //    position: [s, 0.0, s],
+    //    size: s,
+    //    normal: [-1.0, 0.0, 0.0],  // Normal hacia la izquierda (X-)
+    // }
 ];
 
 
@@ -427,15 +427,36 @@ function checkSphereCollisions(spheres) {
     }
 }
 
+function sanitizeVelocity(velocity) {
+    return velocity.map(value => isNaN(value) ? 0 : value);
+}
+
 function elasticCollision(sphere1, sphere2) {
     // Calculate the normal vector between the two spheres
-    let normal = normalize(subtract(sphere2.position, sphere1.position));
+	let diff = subtract(sphere2.position, sphere1.position);
+    console.log("diff:", diff);
+
+    // Ensure diff is a vec3
+    let diffVec3 = vec3(diff[0], diff[1], diff[2]);
+
+    // Normalize the vector
+    let normal = normalize(diffVec3);
+	console.log("2")
+
+	// Convert velocities to vec3
+    let sphere1Velocity = vec3(sphere1.velocity[0], sphere1.velocity[1], sphere1.velocity[2]);
+    let sphere2Velocity = vec3(sphere2.velocity[0], sphere2.velocity[1], sphere2.velocity[2]);
 
     // Calculate the relative velocity
     let relativeVelocity = subtract(sphere2.velocity, sphere1.velocity);
+	console.log("3")
+
+    // Ensure relativeVelocity is a vec3
+    let relativeVelocityVec3 = vec3(relativeVelocity[0], relativeVelocity[1], relativeVelocity[2]);
 
     // Calculate the velocity along the normal
-    let velocityAlongNormal = dot(relativeVelocity, normal);
+    let velocityAlongNormal = dot(relativeVelocityVec3, normal);
+	console.log("4")
 
     // If the spheres are moving towards each other
     if (velocityAlongNormal > 0) return;
@@ -446,9 +467,25 @@ function elasticCollision(sphere1, sphere2) {
     j /= (1 / sphere1.radius + 1 / sphere2.radius);
 
     // Apply the impulse to change the velocities
-    let impulse = scale(j, normal);
-    sphere1.velocity = subtract(sphere1.velocity, scale(1 / sphere1.radius, impulse));
-    sphere2.velocity = add(sphere2.velocity, scale(1 / sphere2.radius, impulse));
+	let impulseMat4 = scale(j, normal); // `scale` returns a mat4
+
+	// Convert the mat4 impulse to a vec3
+	let impulseVec3 = vec3(impulseMat4[0], impulseMat4[5], impulseMat4[10]);
+
+	console.log("sphere1.velocity:", sphere1.velocity);
+	console.log("sphere2.velocity:", sphere2.velocity);
+	scaledMat4 = scale(1 / sphere1.radius, impulseVec3);
+	scaledVec3 = vec3(scaledMat4[0], scaledMat4[5], scaledMat4[10]);
+	console.log("scaledVec3:", scaledVec3);
+    sphere1.velocity = subtract(sphere1Velocity, scaledVec3);
+	console.log("5")
+	scaledMat4 = scale(1 / sphere2.radius, impulseVec3);
+	scaledVec3 = vec3(scaledMat4[0], scaledMat4[5], scaledMat4[10]);
+    sphere2.velocity = add(sphere2Velocity, scaledVec3);
+	console.log("6")
+    // Sanitize velocities to replace NaN values with 0
+    sphere1.velocity = sanitizeVelocity(sphere1.velocity);
+    sphere2.velocity = sanitizeVelocity(sphere2.velocity);
 }
 
 function update(dt) {	
@@ -509,10 +546,7 @@ function update(dt) {
 			}
 		}
 		else{ 
-			//console.log("White Sphere - Control Forces:", controlForces); // Debugging
-            //console.log("White Sphere - Velocity Before:", sphere.velocity); // Debugging
-
-            // Apply control forces to the white sphere
+          // Apply control forces to the white sphere
             let acceleration = [
                 controlForces[0] / masaEsfera,
                 controlForces[1] / masaEsfera,
@@ -565,7 +599,6 @@ function update(dt) {
             }
 		}
 		
-
 		transform = mult(translate(sphere.position[0], sphere.position[1], sphere.position[2]), transform);
 		
 		objectsToDraw[index].uniforms.u_model = transform;
@@ -573,6 +606,7 @@ function update(dt) {
 
 	});
 	// Check for collisions between spheres
+	checkSphereCollisions(spheres);
 }
 
 //----------------------------------------------------------------------------
