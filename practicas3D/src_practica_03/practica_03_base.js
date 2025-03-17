@@ -406,6 +406,7 @@ function tick(nowish) {
 // Update Event Function
 //----------------------------------------------------------------------------
 
+/*
 function checkSphereCollisions(spheres) {
     for (let i = 0; i < spheres.length; i++) {
         for (let j = i + 1; j < spheres.length; j++) {
@@ -426,6 +427,7 @@ function checkSphereCollisions(spheres) {
         }
     }
 }
+    
 
 function sanitizeVelocity(velocity) {
     return velocity.map(value => isNaN(value) ? 0 : value);
@@ -487,6 +489,90 @@ function elasticCollision(sphere1, sphere2) {
     sphere1.velocity = sanitizeVelocity(sphere1.velocity);
     sphere2.velocity = sanitizeVelocity(sphere2.velocity);
 }
+*/
+
+
+// Función para detectar colisiones entre dos esferas
+function detectarColisionEsferas(sphere1, sphere2) {
+    // Calcular la distancia entre los centros de las esferas
+    let dx = sphere2.position[0] - sphere1.position[0];
+    let dy = sphere2.position[1] - sphere1.position[1];
+    let dz = sphere2.position[2] - sphere1.position[2];
+
+    // Distancia entre los centros de las esferas
+    let distancia = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+    // Sumar los radios de las dos esferas
+    let sumaRadios = sphere1.radius + sphere2.radius;
+
+    // Si la distancia es menor que la suma de los radios, hay colisión
+    return distancia < sumaRadios;
+}
+
+// Función para separar las esferas después de una colisión
+function separarEsferas(sphere1, sphere2) {
+    let dx = sphere2.position[0] - sphere1.position[0];
+    let dy = sphere2.position[1] - sphere1.position[1];
+    let dz = sphere2.position[2] - sphere1.position[2];
+
+    // Calcular la distancia entre las esferas
+    let distancia = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+    // Sumar los radios de las dos esferas
+    let sumaRadios = sphere1.radius + sphere2.radius;
+
+    // Si están colisionando, mover las esferas para separarlas
+    if (distancia < sumaRadios) {
+        let diferencia = sumaRadios - distancia;  // Cuánto se superponen las esferas
+
+        // Normalizar la dirección de la colisión
+        let normal = [dx / distancia, dy / distancia, dz / distancia];
+
+        // Mover las esferas fuera de la colisión
+        sphere1.position[0] -= normal[0] * diferencia / 2;
+        sphere1.position[1] -= normal[1] * diferencia / 2;
+        sphere1.position[2] -= normal[2] * diferencia / 2;
+
+        sphere2.position[0] += normal[0] * diferencia / 2;
+        sphere2.position[1] += normal[1] * diferencia / 2;
+        sphere2.position[2] += normal[2] * diferencia / 2;
+    }
+}
+
+// Función para manejar las colisiones entre todas las esferas
+function checkSphereCollisions() {
+    for (let i = 0; i < spheres.length; i++) {
+        for (let j = i + 1; j < spheres.length; j++) {
+            if (detectarColisionEsferas(spheres[i], spheres[j])) {
+                // Si hay colisión, separa las esferas
+                separarEsferas(spheres[i], spheres[j]);
+
+                // Después de separarlas, invertir las velocidades en la dirección de la colisión
+                let dx = spheres[j].position[0] - spheres[i].position[0];
+                let dy = spheres[j].position[1] - spheres[i].position[1];
+                let dz = spheres[j].position[2] - spheres[i].position[2];
+                let distancia = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+                // Normalizar la dirección de la colisión
+                let normal = [dx / distancia, dy / distancia, dz / distancia];
+
+                // Invertir las velocidades en la dirección de la colisión
+                let v1 = spheres[i].velocity[0] * normal[0] + spheres[i].velocity[1] * normal[1] + spheres[i].velocity[2] * normal[2];
+                let v2 = spheres[j].velocity[0] * normal[0] + spheres[j].velocity[1] * normal[1] + spheres[j].velocity[2] * normal[2];
+
+                // Intercambiar las velocidades en la dirección de la colisión
+                spheres[i].velocity[0] -= 2 * v1 * normal[0];
+                spheres[i].velocity[1] -= 2 * v1 * normal[1];
+                spheres[i].velocity[2] -= 2 * v1 * normal[2];
+
+                spheres[j].velocity[0] -= 2 * v2 * normal[0];
+                spheres[j].velocity[1] -= 2 * v2 * normal[1];
+                spheres[j].velocity[2] -= 2 * v2 * normal[2];
+            }
+        }
+    }
+}
+
 
 function update(dt) {	
 	index = planes.length;
