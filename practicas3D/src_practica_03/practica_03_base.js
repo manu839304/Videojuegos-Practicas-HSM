@@ -80,7 +80,7 @@ var sphereProgramInfo = {
 	attribLocations: {},
 };
 
-var numObjects = 3;
+var numObjects = 20;
 
 // Crea un número aleatorio entero entre 'min' y 'max'
 function numAleatorioEntero(min, max) {
@@ -448,7 +448,7 @@ function elasticCollision(sphere1, sphere2) {
     let sphere2Velocity = vec3(sphere2.velocity[0], sphere2.velocity[1], sphere2.velocity[2]);
 
     // Calculate the relative velocity
-    let relativeVelocity = subtract(sphere2.velocity, sphere1.velocity);
+    let relativeVelocity = subtract(sphere2Velocity, sphere1Velocity);
 	console.log("3")
 
     // Ensure relativeVelocity is a vec3
