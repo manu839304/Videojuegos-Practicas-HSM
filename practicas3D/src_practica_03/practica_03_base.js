@@ -38,16 +38,19 @@ window.addEventListener("keydown", (event) => {
         case "ArrowLeft":  controlForces[1] = -fuerzaMovimiento; break; // ← Mueve en X-
         case "ArrowRight": controlForces[1] = fuerzaMovimiento; break;  // → Mueve en X+
     }
+	console.log("keydown:", event.key, "controlForces:", controlForces);
 });
 
 // Detectar cuando se suelta la tecla (detener la fuerza)
 window.addEventListener("keyup", (event) => {
     switch (event.key) {
-        case "ArrowUp":   
-        case "ArrowDown":  controlForces[1] = 0; break;
-        case "ArrowLeft":  
-        case "ArrowRight": controlForces[0] = 0; break;
+        case "ArrowUp": controlForces[0] = 0; break;  
+        case "ArrowDown":  controlForces[0] = 0; break;
+        case "ArrowLeft":  controlForces[1] = 0; break;
+        case "ArrowRight": controlForces[1] = 0; break;
     }
+
+	console.log("keyup:", event.key, "controlForces:", controlForces);
 });
 /*
 // Detectar cuando se suelta la tecla (detener la fuerza)
@@ -366,7 +369,6 @@ window.onload = function init() {
 		transform = mult(transform, translate(plane.position[0], plane.position[1], plane.position[2]));
 		transform = mult(transform, scale(plane.size, plane.size, 1));  // Ajusta la escala en X, Y y Z
 
-		console.log(transform)
 		// Actualiza el modelo del plano
 		objectsToDraw[index].uniforms.u_model = transform;
 	});
@@ -502,8 +504,9 @@ function update(dt) {
 				
 			}
 		}
-		else{ console.log("White Sphere - Control Forces:", controlForces); // Debugging
-            console.log("White Sphere - Velocity Before:", sphere.velocity); // Debugging
+		else{ 
+			//console.log("White Sphere - Control Forces:", controlForces); // Debugging
+            //console.log("White Sphere - Velocity Before:", sphere.velocity); // Debugging
 
             // Apply control forces to the white sphere
             let acceleration = [
@@ -525,8 +528,18 @@ function update(dt) {
             sphere.position[1] += sphere.velocity[1] * dt / 1000;
             sphere.position[2] += sphere.velocity[2] * dt / 1000;
 
-            console.log("White Sphere - Velocity After:", sphere.velocity); // Debugging
-            console.log("White Sphere - Position:", sphere.position); // Debugging
+			if (controlForces[0] === 0) {
+                sphere.velocity[0] *= 0.9; // Factor de frenado
+                if (Math.abs(sphere.velocity[0]) < 0.01) sphere.velocity[0] = 0;
+            }
+            if (controlForces[1] === 0) {
+                sphere.velocity[1] *= 0.9;
+                if (Math.abs(sphere.velocity[1]) < 0.01) sphere.velocity[1] = 0;
+            }
+
+
+            //console.log("White Sphere - Velocity After:", sphere.velocity); // Debugging
+            //console.log("White Sphere - Position:", sphere.position); // Debugging
 
 			// Check if the sphere falls off the plane
             let plane = planes[0]; // Assuming the first plane is the ground
