@@ -63,7 +63,7 @@ var sphereProgramInfo = {
 	attribLocations: {},
 };
 
-var numObjects = 1;
+var numObjects = 10;
 
 // Crea un número aleatorio entero entre 'min' y 'max'
 function numAleatorioEntero(min, max) {
@@ -343,9 +343,7 @@ window.onload = function init() {
 		let transform = mat4(); // Inicializa la matriz de transformación
 
 		// Aplicar rotaciones dependiendo del índice
-		if (index === 0) {  // Suelo
-			//transform = rotate(0, vec3(0, 0, 0));  // No rotar
-		} else if (index === 1) {  // Izquierda
+		if (index === 1) {  // Izquierda
 			transform = rotate(90, vec3(1, 0, 0));  // Rota 90 grados en Y
 		} else if (index === 2) {  // Derecha
 			transform = rotate(-90, vec3(1, 0, 0));  // Rota -90 grados en Y (para el lado derecho)
