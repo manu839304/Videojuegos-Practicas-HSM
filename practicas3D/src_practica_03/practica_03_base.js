@@ -33,10 +33,21 @@ let controlForces = [0, 0, 0]; // Almacena la fuerza aplicada
 // Detectar teclas presionadas
 window.addEventListener("keydown", (event) => {
     switch (event.key) {
-        case "ArrowUp":    controlForces[0] = -fuerzaMovimiento; break;  // ↑ Mueve en Y+
-        case "ArrowDown":  controlForces[0] = fuerzaMovimiento; break; // ↓ Mueve en Y-
-        case "ArrowLeft":  controlForces[1] = -fuerzaMovimiento; break; // ← Mueve en X-
-        case "ArrowRight": controlForces[1] = fuerzaMovimiento; break;  // → Mueve en X+
+        case "ArrowUp":    
+			controlForces[0] = -fuerzaMovimiento;
+			controlForces[1] = -fuerzaMovimiento; break;  // ↑ Mueve en Y-  y X-
+
+        case "ArrowDown": 
+			controlForces[0] = fuerzaMovimiento;
+			controlForces[1] = fuerzaMovimiento; break;  // ↑ Mueve en Y+  y X+
+
+        case "ArrowLeft":
+			controlForces[0] = fuerzaMovimiento;
+			controlForces[1] = -fuerzaMovimiento; break;  // ↑ Mueve en Y-  y X+
+
+        case "ArrowRight":
+			controlForces[0] = -fuerzaMovimiento;
+			controlForces[1] = +fuerzaMovimiento; break;  // ↑ Mueve en Y+  y X-
     }
 	console.log("keydown:", event.key, "controlForces:", controlForces);
 });
@@ -44,10 +55,13 @@ window.addEventListener("keydown", (event) => {
 // Detectar cuando se suelta la tecla (detener la fuerza)
 window.addEventListener("keyup", (event) => {
     switch (event.key) {
-        case "ArrowUp": controlForces[0] = 0; break;  
-        case "ArrowDown":  controlForces[0] = 0; break;
-        case "ArrowLeft":  controlForces[1] = 0; break;
-        case "ArrowRight": controlForces[1] = 0; break;
+        case "ArrowUp":
+        case "ArrowDown":
+        case "ArrowLeft":
+        case "ArrowRight":
+			controlForces[0] = 0; 
+			controlForces[1] = 0;
+			break;
     }
 
 	console.log("keyup:", event.key, "controlForces:", controlForces);
