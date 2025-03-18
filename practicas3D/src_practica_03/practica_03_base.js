@@ -513,6 +513,13 @@ function update(dt) {
 
 		// Update position of the sphere based in velocity
 		if(i!==0){
+			// Calculate the distance from the sphere to the plane center
+			// Check if the sphere falls off the plane
+            let plane = planes[0]; // Assuming the first plane is the ground
+            let planeCenter = plane.position;
+            let planeSize = plane.size;
+            let distanceX = Math.abs(sphere.position[0]+ sphere.velocity[0]*dt/1000 - planeCenter[0]);
+            let distanceY = Math.abs(sphere.position[1]+ sphere.velocity[1]*dt/1000 - planeCenter[1]);
 			sphere.position[0] += sphere.velocity[0]*dt/1000;
 			sphere.position[1] += sphere.velocity[1]*dt/1000;
 			sphere.position[2] += sphere.velocity[2]*dt/1000; 
@@ -523,30 +530,36 @@ function update(dt) {
 			// 2.2 Check sphere-plane collision
 
 			let sphereToPlane = Array.from(subtract(sphere.position, planes[0].position));
+            // Check if the sphere is outside the plane bounds
+            if (distanceX <= planeSize && distanceY <= planeSize ) {
+                
 
-			// Distancia de la esfera al plano				
-			let d = (sphereToPlane[0] * planes[0].normal[0]) +
-					(sphereToPlane[1] * planes[0].normal[1]) +
-					(sphereToPlane[2] * planes[0].normal[2]);
+				// Distancia de la esfera al plano				
+				let d = (sphereToPlane[0] * planes[0].normal[0]) +
+						(sphereToPlane[1] * planes[0].normal[1]) +
+						(sphereToPlane[2] * planes[0].normal[2]);
+				
+				if (d <= (sphere.radius + 0.0001)){ // ponemos un umbral para que deje de botar si pierde mucha energia
+
+					
+					sphere.velocity[2] = -sphere.velocity[2]*0.95;
+					sphere.position[2] += (sphere.radius - d) + 0.0001;
+					/*
+					let withinPlaneBounds = Math.abs(sphere.position[0] - plane.position[0]) <= plane.size  &&
+							Math.abs(sphere.position[1] - plane.position[1]) <= plane.size; 
+					*/
+
+					// Punto interseccion
+					let intersectionPoint = [
+						sphere.position[0] - (d - sphere.radius) * planes[0].normal[0],
+						sphere.position[1] - (d - sphere.radius) * planes[0].normal[1],
+						sphere.position[2] - (d - sphere.radius) * planes[0].normal[2]
+					];
+					
+				}
+            }
+
 			
-			if (d <= (sphere.radius + 0.0001)){ // ponemos un umbral para que deje de botar si pierde mucha energia
-
-				
-				sphere.velocity[2] = -sphere.velocity[2]*0.95;
-				sphere.position[2] += (sphere.radius - d) + 0.0001;
-				/*
-				let withinPlaneBounds = Math.abs(sphere.position[0] - plane.position[0]) <= plane.size  &&
-                        Math.abs(sphere.position[1] - plane.position[1]) <= plane.size; 
-				*/
-
-				// Punto interseccion
-				let intersectionPoint = [
-					sphere.position[0] - (d - sphere.radius) * planes[0].normal[0],
-					sphere.position[1] - (d - sphere.radius) * planes[0].normal[1],
-					sphere.position[2] - (d - sphere.radius) * planes[0].normal[2]
-				];
-				
-			}
 		}
 		else{ 
           // Apply control forces to the white sphere
@@ -565,7 +578,7 @@ function update(dt) {
             sphere.velocity[1] = Math.max(-vmax, Math.min(vmax, sphere.velocity[1]));
 
             // Update position based on velocity
-			if(planes[0].position[2] >= sphere.position[2]+ sphere.velocity[2]*dt/1000){
+			if(planes[0].position[2] >=  sphere.position[2]+ sphere.velocity[2]*dt/1000){
 				sphere.position[2] += sphere.velocity[2] * dt / 1000;
 			}
             sphere.position[0] += sphere.velocity[0] * dt / 1000;
