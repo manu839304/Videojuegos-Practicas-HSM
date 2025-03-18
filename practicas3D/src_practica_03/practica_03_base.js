@@ -347,7 +347,7 @@ window.onload = function init() {
 			else{
 				sphere.position = [5*(2*Math.random() - 1), 5*(2*Math.random() - 1), sphere.radius/2];
 			}*/
-			sphere.rotation = [Math.random()*360, Math.random()*360, Math.random()*360];
+			//sphere.rotation = [Math.random()*360, Math.random()*360, Math.random()*360];
 		}
 	});
 
@@ -514,17 +514,14 @@ function update(dt) {
 		// transform = mult(rotate(sphere.rotation[2], ejeZ), transform);
 
         if (sphere.position[2] <= sphere.radius + 0.01) {
-            // // Update state (rotation) of the sphere
             let velocidadLineal = Math.sqrt(
                 sphere.velocity[0] * sphere.velocity[0] +
                 sphere.velocity[1] * sphere.velocity[1] +
                 sphere.velocity[2] * sphere.velocity[2]
             );
             
-            // Relacionar la rotación con la velocidad
-            let angularVelocity = velocidadLineal / (2 * Math.PI * sphere.radius); // θ = v / (2πr)
             
-            if (velocidadLineal > 0.001){
+            if (velocidadLineal > 0.1){
                 let direction = Math.atan2(sphere.velocity[1], sphere.velocity[0]);
 
                 // Normal al movimiento en X-Y (eje de rotación)
@@ -536,20 +533,15 @@ function update(dt) {
                 
                 // Asignar velocidad angular en el eje correcto
                 sphere.angularVelocity = [axisX * angularSpeed, axisY * angularSpeed, 0];
+                
+                sphere.rotation[0] += sphere.angularVelocity[0] * dt;
+                sphere.rotation[1] += sphere.angularVelocity[1] * dt;
+                sphere.rotation[2] += sphere.angularVelocity[2] * dt;
+                
+                if(i === 0) console.log(sphere.velocity)
             }
-            // Actualizar la rotación en función de la velocidad angular
-            //sphere.rotation[0] = (sphere.rotation[0] + angularVelocity * dt) % 360; // Rotación en X
-            //sphere.rotation[1] = (sphere.rotation[1] + angularVelocity * dt) % 360; // Rotación en Y
-            //sphere.rotation[2] = (sphere.rotation[2] + angularVelocity * dt) % 360; // Rotación en Z
-            
-            sphere.rotation[0] += sphere.angularVelocity[0] * dt;
-            sphere.rotation[1] += sphere.angularVelocity[1] * dt;
-            sphere.rotation[2] += sphere.angularVelocity[2] * dt;
         }
-
         
-
-
         let ejeX = vec3(1.0, 0.0, 0.0);
 		transform = mult(rotate(sphere.rotation[0], ejeX), transform);
 		let ejeY = vec3(0.0, 1.0, 0.0);
@@ -628,6 +620,10 @@ function update(dt) {
             if (controlForces[1] === 0) {
                 sphere.velocity[1] *= 0.9;
                 if (Math.abs(sphere.velocity[1]) < 0.01) sphere.velocity[1] = 0;
+            }
+            if (controlForces[2] === 0) {
+                sphere.velocity[2] *= 0.9;
+                if (Math.abs(sphere.velocity[2]) < 0.01) sphere.velocity[2] = 0;
             }
 
 
