@@ -406,90 +406,6 @@ function tick(nowish) {
 // Update Event Function
 //----------------------------------------------------------------------------
 
-/*
-function checkSphereCollisions(spheres) {
-    for (let i = 0; i < spheres.length; i++) {
-        for (let j = i + 1; j < spheres.length; j++) {
-            let sphere1 = spheres[i];
-            let sphere2 = spheres[j];
-
-            // Calculate the distance between the centers of the two spheres
-            let dx = sphere1.position[0] - sphere2.position[0];
-            let dy = sphere1.position[1] - sphere2.position[1];
-            let dz = sphere1.position[2] - sphere2.position[2];
-            let distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
-
-            // Check if the distance is less than the sum of the radii
-            if (distance < sphere1.radius + sphere2.radius) {
-                // Collision detected, apply elastic collision
-                elasticCollision(sphere1, sphere2);
-            }
-        }
-    }
-}
-    
-
-function sanitizeVelocity(velocity) {
-    return velocity.map(value => isNaN(value) ? 0 : value);
-}
-
-function elasticCollision(sphere1, sphere2) {
-    // Calculate the normal vector between the two spheres
-	let diff = subtract(sphere2.position, sphere1.position);
-    console.log("diff:", diff);
-
-    // Ensure diff is a vec3
-    let diffVec3 = vec3(diff[0], diff[1], diff[2]);
-
-    // Normalize the vector
-    let normal = normalize(diffVec3);
-	console.log("2")
-
-	// Convert velocities to vec3
-    let sphere1Velocity = vec3(sphere1.velocity[0], sphere1.velocity[1], sphere1.velocity[2]);
-    let sphere2Velocity = vec3(sphere2.velocity[0], sphere2.velocity[1], sphere2.velocity[2]);
-
-    // Calculate the relative velocity
-    let relativeVelocity = subtract(sphere2Velocity, sphere1Velocity);
-	console.log("3")
-
-    // Ensure relativeVelocity is a vec3
-    let relativeVelocityVec3 = vec3(relativeVelocity[0], relativeVelocity[1], relativeVelocity[2]);
-
-    // Calculate the velocity along the normal
-    let velocityAlongNormal = dot(relativeVelocityVec3, normal);
-	console.log("4")
-
-    // If the spheres are moving towards each other
-    if (velocityAlongNormal > 0) return;
-
-    // Calculate the impulse
-    let e = 1.0; // Coefficient of restitution (1 for elastic collision)
-    let j = -(1 + e) * velocityAlongNormal;
-    j /= (1 / sphere1.radius + 1 / sphere2.radius);
-
-    // Apply the impulse to change the velocities
-	let impulseMat4 = scale(j, normal); // `scale` returns a mat4
-
-	// Convert the mat4 impulse to a vec3
-	let impulseVec3 = vec3(impulseMat4[0], impulseMat4[5], impulseMat4[10]);
-
-	console.log("sphere1.velocity:", sphere1.velocity);
-	console.log("sphere2.velocity:", sphere2.velocity);
-	scaledMat4 = scale(1 / sphere1.radius, impulseVec3);
-	scaledVec3 = vec3(scaledMat4[0], scaledMat4[5], scaledMat4[10]);
-	console.log("scaledVec3:", scaledVec3);
-    sphere1.velocity = subtract(sphere1Velocity, scaledVec3);
-	console.log("5")
-	scaledMat4 = scale(1 / sphere2.radius, impulseVec3);
-	scaledVec3 = vec3(scaledMat4[0], scaledMat4[5], scaledMat4[10]);
-    sphere2.velocity = add(sphere2Velocity, scaledVec3);
-	console.log("6")
-    // Sanitize velocities to replace NaN values with 0
-    sphere1.velocity = sanitizeVelocity(sphere1.velocity);
-    sphere2.velocity = sanitizeVelocity(sphere2.velocity);
-}
-*/
 
 
 // Función para detectar colisiones entre dos esferas
@@ -547,6 +463,7 @@ function checkSphereCollisions() {
                 // Si hay colisión, separa las esferas
                 separarEsferas(spheres[i], spheres[j]);
 
+				
                 // Después de separarlas, invertir las velocidades en la dirección de la colisión
                 let dx = spheres[j].position[0] - spheres[i].position[0];
                 let dy = spheres[j].position[1] - spheres[i].position[1];
@@ -564,7 +481,7 @@ function checkSphereCollisions() {
                 spheres[i].velocity[0] -= 2 * v1 * normal[0];
                 spheres[i].velocity[1] -= 2 * v1 * normal[1];
                 spheres[i].velocity[2] -= 2 * v1 * normal[2];
-
+				
                 spheres[j].velocity[0] -= 2 * v2 * normal[0];
                 spheres[j].velocity[1] -= 2 * v2 * normal[1];
                 spheres[j].velocity[2] -= 2 * v2 * normal[2];
@@ -648,9 +565,12 @@ function update(dt) {
             sphere.velocity[1] = Math.max(-vmax, Math.min(vmax, sphere.velocity[1]));
 
             // Update position based on velocity
+			if(planes[0].position[2] >= sphere.position[2]+ sphere.velocity[2]*dt/1000){
+				sphere.position[2] += sphere.velocity[2] * dt / 1000;
+			}
             sphere.position[0] += sphere.velocity[0] * dt / 1000;
             sphere.position[1] += sphere.velocity[1] * dt / 1000;
-            sphere.position[2] += sphere.velocity[2] * dt / 1000;
+            
 
 			if (controlForces[0] === 0) {
                 sphere.velocity[0] *= 0.9; // Factor de frenado
