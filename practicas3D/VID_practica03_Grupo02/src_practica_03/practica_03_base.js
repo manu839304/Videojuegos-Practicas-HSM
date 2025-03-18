@@ -161,7 +161,7 @@ function colorPlano(color){
 };
 
 
-s = 10;
+s = 10; // Size del plano
 
 var planes = [
     // Suelo
@@ -184,7 +184,7 @@ for (let i = 0; i < numObjects; i++) {
 		radius: 1.5,
     };
 
-    spheres.push(object); // Agrega el objeto creado al array
+    spheres.push(object);
 }
 
 var objectsToDraw = []
@@ -195,7 +195,7 @@ for (let i = 0; i < planes.length; i++) {
 
 	let object = {
         programInfo: planeProgramInfo,
-        pointsArray: pointsPlane, // Usamos el mismo modelo de puntos para cada plano
+        pointsArray: pointsPlane,
         uniforms: {
             u_color: colorAux,
             u_model: new mat4(),
@@ -203,7 +203,7 @@ for (let i = 0; i < planes.length; i++) {
         primType: "triangles",
     };
 
-	objectsToDraw.push(object); // Agrega el objeto creado al array
+	objectsToDraw.push(object);
 }
 
 
@@ -217,13 +217,13 @@ for (let i = 0; i < numObjects; i++) {
         programInfo: sphereProgramInfo,
 		pointsArray: pointsSphere, 
 		uniforms: {
-            u_color: colorAux, // Diferentes colores dependiendo del índice
+            u_color: colorAux,
 			u_model: spheres[i].position,
 		},
 		primType: "triangles",
     };
 
-	objectsToDraw.push(object); // Agrega el objeto creado al array
+	objectsToDraw.push(object);
 }
 
 
@@ -283,18 +283,7 @@ window.onload = function init() {
 	// Actualiza los modelos de los planos
 	planes.forEach(function(plane, index) {
 		// Comienza la transformación con la traslación
-		let transform = mat4(); // Inicializa la matriz de transformación
-
-		// Aplicar rotaciones dependiendo del índice
-		if (index === 1) {  // Izquierda
-			transform = rotate(90, vec3(1, 0, 0));  // Rota 90 grados en Y
-		} else if (index === 2) {  // Derecha
-			transform = rotate(-90, vec3(1, 0, 0));  // Rota -90 grados en Y (para el lado derecho)
-		} else if (index === 3) {  // Trasera
-			transform = rotate(90, vec3(0, 1, 0));  // Rota -90 grados en Y (para el lado derecho)
-		} else if (index === 4) {  // Delantera
-			transform = rotate(-90, vec3(0, 1, 0));  // Rota -90 grados en Y (para el lado derecho)
-		}
+		let transform = mat4();
 
 		transform = mult(transform, translate(plane.position[0], plane.position[1], plane.position[2]));
 		transform = mult(transform, scale(plane.size, plane.size, 1));  // Ajusta la escala en X, Y y Z
@@ -318,7 +307,6 @@ function tick(nowish) {
 	var now = Date.now();
 
     var dt = now - lastTick;
-	// Skip de frames para que cuando estes fuera no corra el tiempo y meta un rebote loco
 	dt = Math.min(dt, 16*4);
     lastTick = now;
 
@@ -332,11 +320,9 @@ function tick(nowish) {
 // Update Event Function
 //----------------------------------------------------------------------------
 
-
-
 // Función para detectar colisiones entre dos esferas
 function detectarColisionEsferas(sphere1, sphere2) {
-    // Calcular la distancia entre los centros de las esferas
+    // Calculamos la distancia entre los centros de las esferas
     let dx = sphere2.position[0] - sphere1.position[0];
     let dy = sphere2.position[1] - sphere1.position[1];
     let dz = sphere2.position[2] - sphere1.position[2];
@@ -344,7 +330,7 @@ function detectarColisionEsferas(sphere1, sphere2) {
     // Distancia entre los centros de las esferas
     let distancia = Math.sqrt(dx * dx + dy * dy + dz * dz);
 
-    // Sumar los radios de las dos esferas
+    // Sumamos los radios de las dos esferas
     let sumaRadios = (sphere1.radius + sphere2.radius)/2;
 
     // Si la distancia es menor que la suma de los radios, hay colisión
@@ -357,21 +343,18 @@ function separarEsferas(sphere1, sphere2,i) {
     let dy = sphere2.position[1] - sphere1.position[1];
     let dz = sphere2.position[2] - sphere1.position[2];
 
-    // Calcular la distancia entre las esferas
+    // Calculamos la distancia entre las esferas
     let distancia = Math.sqrt(dx * dx + dy * dy + dz * dz);
 
-    // Sumar los radios de las dos esferas
+    // Sumamos los radios de las dos esferas
     let sumaRadios = (sphere1.radius + sphere2.radius)/2;
 
-    // Si están colisionando, mover las esferas para separarlas
+    // Si están colisionando, movemos las esferas para separarlas
     if (distancia < sumaRadios) {
         let diferencia = sumaRadios - distancia;  // Cuánto se superponen las esferas
 
-        // Normalizar la dirección de la colisión
         let normal = [dx / distancia, dy / distancia, dz / distancia];
 		if(i!==0){
-        // Mover las esferas fuera de la colisión
-        	
         	sphere1.position[2] -= normal[2] * diferencia / 2;
 		}
 		sphere1.position[0] -= normal[0] * diferencia / 2;
@@ -387,24 +370,23 @@ function checkSphereCollisions() {
     for (let i = 0; i < spheres.length; i++) {
         for (let j = i + 1; j < spheres.length; j++) {
             if (detectarColisionEsferas(spheres[i], spheres[j])) {
-                // Si hay colisión, separa las esferas
+
                 separarEsferas(spheres[i], spheres[j],i);
 
-				
-                // Después de separarlas, invertir las velocidades en la dirección de la colisión
+                // Después de separarlas, invertimos las velocidades en la dirección de la colisión
                 let dx = spheres[j].position[0] - spheres[i].position[0];
                 let dy = spheres[j].position[1] - spheres[i].position[1];
                 let dz = spheres[j].position[2] - spheres[i].position[2];
                 let distancia = Math.sqrt(dx * dx + dy * dy + dz * dz);
 
-                // Normalizar la dirección de la colisión
+                // Normalizamos la dirección de la colisión
                 let normal = [dx / distancia, dy / distancia, dz / distancia];
 
-                // Invertir las velocidades en la dirección de la colisión
+                // Invertimos las velocidades en la dirección de la colisión
                 let v1 = spheres[i].velocity[0] * normal[0] + spheres[i].velocity[1] * normal[1] + spheres[i].velocity[2] * normal[2];
                 let v2 = spheres[j].velocity[0] * normal[0] + spheres[j].velocity[1] * normal[1] + spheres[j].velocity[2] * normal[2];
 
-                // Intercambiar las velocidades en la dirección de la colisión
+                // Intercambiamos las velocidades en la dirección de la colisión
                 spheres[i].velocity[0] -= 2 * v1 * normal[0];
                 spheres[i].velocity[1] -= 2 * v1 * normal[1];
                 spheres[i].velocity[2] -= 2 * v1 * normal[2];
@@ -427,6 +409,7 @@ function update(dt) {
 		// // Update graphical representation
 		let transform = scale(sphere.radius, sphere.radius, sphere.radius);
 
+        // Si la esfera está en el suelo, aplicamos rotación
         if (sphere.position[2] <= sphere.radius + 0.01) {
             let velocidadLineal = Math.sqrt(
                 sphere.velocity[0] * sphere.velocity[0] +
@@ -464,11 +447,10 @@ function update(dt) {
 		let ejeZ = vec3(0.0, 0.0, 1.0);
 		transform = mult(rotate(sphere.rotation[2], ejeZ), transform);
 
-		// Update position of the sphere based in velocity
+		// Actualizamos la posición de la esfera
 		if(i!==0){
-			// Calculate the distance from the sphere to the plane center
-			// Check if the sphere falls off the plane
-            let plane = planes[0]; // Assuming the first plane is the ground
+			
+            let plane = planes[0]; // Suelo
             let planeCenter = plane.position;
             let planeSize = plane.size;
             let distanceX = Math.abs(sphere.position[0]+ sphere.velocity[0]*dt/1000 - planeCenter[0]);
@@ -477,16 +459,13 @@ function update(dt) {
 			sphere.position[1] += sphere.velocity[1]*dt/1000;
 			sphere.position[2] += sphere.velocity[2]*dt/1000; 
 			
-			// 2.1 Gravity: Update velocity of the sphere based in gravity
-			sphere.velocity[2] -= gravity * dt/1000;
+            // Aplicamos gravedad
+            sphere.velocity[2] -= gravity * dt/1000;
 			
-			// 2.2 Check sphere-plane collision
-
+            // Colisión esfera-suelo
 			let sphereToPlane = Array.from(subtract(sphere.position, planes[0].position));
-            // Check if the sphere is outside the plane bounds
-            if (distanceX <= planeSize && distanceY <= planeSize ) {
-                
 
+            if (distanceX <= planeSize && distanceY <= planeSize ) {
 				// Distancia de la esfera al plano				
 				let d = (sphereToPlane[0] * planes[0].normal[0]) +
 						(sphereToPlane[1] * planes[0].normal[1]) +
@@ -504,31 +483,28 @@ function update(dt) {
 			
 		}
 		else{ 
-          // Apply control forces to the white sphere
+            // Aplicamos el control del usuario a la esfera blanca
             let acceleration = [
                 controlForces[0] / masaEsfera,
                 controlForces[1] / masaEsfera,
-                0  // No force applied in Z
+                0
             ];
 
-            // Update velocity based on acceleration
+            // Actualizamos velocidad según la aceleración
             sphere.velocity[0] += acceleration[0] * dt / 1000;
             sphere.velocity[1] += acceleration[1] * dt / 1000;
 
-            // Limit velocity to maximum speed
+            // Limitamos la velocidad
             sphere.velocity[0] = Math.max(-vmax, Math.min(vmax, sphere.velocity[0]));
             sphere.velocity[1] = Math.max(-vmax, Math.min(vmax, sphere.velocity[1]));
 
-            // Update position based on velocity
-			/*if(planes[0].position[2] >=  sphere.position[2]+ sphere.velocity[2]*dt/1000){
-				sphere.position[2] += sphere.velocity[2] * dt / 1000;
-			}*/
+            // Actualizamos su posición según la velocidad
             sphere.position[0] += sphere.velocity[0] * dt / 1000;
             sphere.position[1] += sphere.velocity[1] * dt / 1000;
             
-
+            // Factores de frenado
 			if (controlForces[0] === 0) {
-                sphere.velocity[0] *= 0.9; // Factor de frenado
+                sphere.velocity[0] *= 0.9;
                 if (Math.abs(sphere.velocity[0]) < 0.01) sphere.velocity[0] = 0;
             }
             if (controlForces[1] === 0) {
@@ -540,38 +516,36 @@ function update(dt) {
                 if (Math.abs(sphere.velocity[2]) < 0.01) sphere.velocity[2] = 0;
             }
 
-
-            //console.log("White Sphere - Velocity After:", sphere.velocity); // Debugging
-            //console.log("White Sphere - Position:", sphere.position); // Debugging
-
-			// Check if the sphere falls off the plane
-            let plane = planes[0]; // Assuming the first plane is the ground
+			// Esfera se sale del plano
+            let plane = planes[0];
             let planeCenter = plane.position;
             let planeSize = plane.size;
 
-            // Calculate the distance from the sphere to the plane center
+            // Distancia esfera-plano
             let distanceX = Math.abs(sphere.position[0] - planeCenter[0]);
             let distanceY = Math.abs(sphere.position[1] - planeCenter[1]);
             let distanceZ = Math.abs(sphere.position[2] - planeCenter[2]);
 
-            // Check if the sphere is outside the plane bounds
+            // Si se sale del plano, reseteamos
             if (distanceX > planeSize || distanceY > planeSize || distanceZ > planeSize) {
                 // Reset sphere position to the origin
-                sphere.position = [0.0, 0.0, spheres[0].radius/2.0]; // Reset to origin
-                sphere.velocity = [0.0, 0.0, 0.0]; // Reset velocity
-				controlForces[0] = 0; // Reset control forces
-				controlForces[1] = 0; // Reset control forces
+                sphere.position = [0.0, 0.0, spheres[0].radius/2.0];
+                sphere.velocity = [0.0, 0.0, 0.0];
+				controlForces[0] = 0;
+				controlForces[1] = 0;
             }
 		}
-		
+        
+        
 		transform = mult(translate(sphere.position[0], sphere.position[1], sphere.position[2]), transform);
 		
 		objectsToDraw[index].uniforms.u_model = transform;
 		index += 1;
 
 	});
-	// Check for collisions between spheres
-	checkSphereCollisions(spheres);
+
+    // Chequeamos las colisiones a posteriori
+    checkSphereCollisions(spheres);
 }
 
 //----------------------------------------------------------------------------
