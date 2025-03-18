@@ -502,10 +502,32 @@ function update(dt) {
 		sphere.rotation[0] = (sphere.rotation[0] + 0.02*dt) % 360;
 		sphere.rotation[1] = (sphere.rotation[1] + 0.02*dt) % 360;
 
-		// Update graphical representation
+		// // Update graphical representation
 		let transform = scale(sphere.radius, sphere.radius, sphere.radius);
 
-		let ejeX = vec3(1.0, 0.0, 0.0);
+        // let ejeX = vec3(1.0, 0.0, 0.0);
+		// transform = mult(rotate(sphere.rotation[0], ejeX), transform);
+		// let ejeY = vec3(0.0, 1.0, 0.0);
+		// transform = mult(rotate(sphere.rotation[1], ejeY), transform);
+		// let ejeZ = vec3(0.0, 0.0, 1.0);
+		// transform = mult(rotate(sphere.rotation[2], ejeZ), transform);
+
+        // // Update state (rotation) of the sphere
+        let velocidadLineal = Math.sqrt(
+            sphere.velocity[0] * sphere.velocity[0] +
+            sphere.velocity[1] * sphere.velocity[1] +
+            sphere.velocity[2] * sphere.velocity[2]
+        );
+        
+        // Relacionar la rotación con la velocidad
+        let angularVelocity = velocidadLineal / (2 * Math.PI * sphere.radius); // θ = v / (2πr)
+        
+        // Actualizar la rotación en función de la velocidad angular
+        sphere.rotation[0] = (sphere.rotation[0] + angularVelocity * dt) % 360; // Rotación en X
+        sphere.rotation[1] = (sphere.rotation[1] + angularVelocity * dt) % 360; // Rotación en Y
+        sphere.rotation[2] = (sphere.rotation[2] + angularVelocity * dt) % 360; // Rotación en Z
+        
+        let ejeX = vec3(1.0, 0.0, 0.0);
 		transform = mult(rotate(sphere.rotation[0], ejeX), transform);
 		let ejeY = vec3(0.0, 1.0, 0.0);
 		transform = mult(rotate(sphere.rotation[1], ejeY), transform);
