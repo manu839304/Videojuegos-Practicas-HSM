@@ -612,11 +612,11 @@ function update(dt) {
 					(sphereToPlane[1] * planes[0].normal[1]) +
 					(sphereToPlane[2] * planes[0].normal[2]);
 			
-			if (d <= (sphere.radius + 0.01)){ // ponemos un umbral para que deje de botar si pierde mucha energia
+			if (d <= (sphere.radius + 0.0001)){ // ponemos un umbral para que deje de botar si pierde mucha energia
 
 				
 				sphere.velocity[2] = -sphere.velocity[2]*0.95;
-				sphere.position[2] += (sphere.radius - d);
+				sphere.position[2] += (sphere.radius - d) + 0.0001;
 				/*
 				let withinPlaneBounds = Math.abs(sphere.position[0] - plane.position[0]) <= plane.size  &&
                         Math.abs(sphere.position[1] - plane.position[1]) <= plane.size; 
