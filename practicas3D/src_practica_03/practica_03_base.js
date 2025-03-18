@@ -350,7 +350,7 @@ window.onload = function init() {
 		}
 	});
 
-	spheres[0].position = [0.0, 0.0, spheres[0].radius/2.0];
+	spheres[0].position = [0.0, 0.0, spheres[0].radius/2];
 	
 	// x = delante/atrás, y = izquierda/derecha, z = arriba/abajo
 
@@ -426,7 +426,7 @@ function detectarColisionEsferas(sphere1, sphere2) {
 }
 
 // Función para separar las esferas después de una colisión
-function separarEsferas(sphere1, sphere2) {
+function separarEsferas(sphere1, sphere2,i) {
     let dx = sphere2.position[0] - sphere1.position[0];
     let dy = sphere2.position[1] - sphere1.position[1];
     let dz = sphere2.position[2] - sphere1.position[2];
@@ -443,12 +443,13 @@ function separarEsferas(sphere1, sphere2) {
 
         // Normalizar la dirección de la colisión
         let normal = [dx / distancia, dy / distancia, dz / distancia];
-
+		if(i!==0){
         // Mover las esferas fuera de la colisión
-        sphere1.position[0] -= normal[0] * diferencia / 2;
+        	
+        	sphere1.position[2] -= normal[2] * diferencia / 2;
+		}
+		sphere1.position[0] -= normal[0] * diferencia / 2;
         sphere1.position[1] -= normal[1] * diferencia / 2;
-        sphere1.position[2] -= normal[2] * diferencia / 2;
-
         sphere2.position[0] += normal[0] * diferencia / 2;
         sphere2.position[1] += normal[1] * diferencia / 2;
         sphere2.position[2] += normal[2] * diferencia / 2;
@@ -461,7 +462,7 @@ function checkSphereCollisions() {
         for (let j = i + 1; j < spheres.length; j++) {
             if (detectarColisionEsferas(spheres[i], spheres[j])) {
                 // Si hay colisión, separa las esferas
-                separarEsferas(spheres[i], spheres[j]);
+                separarEsferas(spheres[i], spheres[j],i);
 
 				
                 // Después de separarlas, invertir las velocidades en la dirección de la colisión
@@ -578,9 +579,9 @@ function update(dt) {
             sphere.velocity[1] = Math.max(-vmax, Math.min(vmax, sphere.velocity[1]));
 
             // Update position based on velocity
-			if(planes[0].position[2] >=  sphere.position[2]+ sphere.velocity[2]*dt/1000){
+			/*if(planes[0].position[2] >=  sphere.position[2]+ sphere.velocity[2]*dt/1000){
 				sphere.position[2] += sphere.velocity[2] * dt / 1000;
-			}
+			}*/
             sphere.position[0] += sphere.velocity[0] * dt / 1000;
             sphere.position[1] += sphere.velocity[1] * dt / 1000;
             
