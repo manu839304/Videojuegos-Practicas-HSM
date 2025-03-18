@@ -419,7 +419,7 @@ function detectarColisionEsferas(sphere1, sphere2) {
     let distancia = Math.sqrt(dx * dx + dy * dy + dz * dz);
 
     // Sumar los radios de las dos esferas
-    let sumaRadios = sphere1.radius + sphere2.radius;
+    let sumaRadios = (sphere1.radius + sphere2.radius)/2;
 
     // Si la distancia es menor que la suma de los radios, hay colisión
     return distancia < sumaRadios;
@@ -435,7 +435,7 @@ function separarEsferas(sphere1, sphere2,i) {
     let distancia = Math.sqrt(dx * dx + dy * dy + dz * dz);
 
     // Sumar los radios de las dos esferas
-    let sumaRadios = sphere1.radius + sphere2.radius;
+    let sumaRadios = (sphere1.radius + sphere2.radius)/2;
 
     // Si están colisionando, mover las esferas para separarlas
     if (distancia < sumaRadios) {
