@@ -245,7 +245,8 @@ for (let i = 0; i < numObjects; i++) {
     let object = {
         position: [0.0, 0.0, 0.0],
 		rotation: [0.0, 0.0, 0.0],
-		velocity: [0.0, 0.0, 0.0],		
+		velocity: [0.0, 0.0, 0.0],
+        angularVelocity: [0.0, 0.0, 0.0],
 		radius: 1.5,
     };
 
@@ -499,8 +500,8 @@ function update(dt) {
 	spheres.forEach(function(sphere, i) {
 		
 		// Update state (rotation) of the sphere
-		sphere.rotation[0] = (sphere.rotation[0] + 0.02*dt) % 360;
-		sphere.rotation[1] = (sphere.rotation[1] + 0.02*dt) % 360;
+		//sphere.rotation[0] = (sphere.rotation[0] + 0.02*dt) % 360;
+		//sphere.rotation[1] = (sphere.rotation[1] + 0.02*dt) % 360;
 
 		// // Update graphical representation
 		let transform = scale(sphere.radius, sphere.radius, sphere.radius);
@@ -512,21 +513,43 @@ function update(dt) {
 		// let ejeZ = vec3(0.0, 0.0, 1.0);
 		// transform = mult(rotate(sphere.rotation[2], ejeZ), transform);
 
-        // // Update state (rotation) of the sphere
-        let velocidadLineal = Math.sqrt(
-            sphere.velocity[0] * sphere.velocity[0] +
-            sphere.velocity[1] * sphere.velocity[1] +
-            sphere.velocity[2] * sphere.velocity[2]
-        );
+        if (sphere.position[2] <= sphere.radius + 0.01) {
+            // // Update state (rotation) of the sphere
+            let velocidadLineal = Math.sqrt(
+                sphere.velocity[0] * sphere.velocity[0] +
+                sphere.velocity[1] * sphere.velocity[1] +
+                sphere.velocity[2] * sphere.velocity[2]
+            );
+            
+            // Relacionar la rotación con la velocidad
+            let angularVelocity = velocidadLineal / (2 * Math.PI * sphere.radius); // θ = v / (2πr)
+            
+            if (velocidadLineal > 0.001){
+                let direction = Math.atan2(sphere.velocity[1], sphere.velocity[0]);
+
+                // Normal al movimiento en X-Y (eje de rotación)
+                let axisX = -Math.sin(direction);  // Eje X perpendicular
+                let axisY = Math.cos(direction);   // Eje Y perpendicular
+
+                // Calcular velocidad angular (θ = v / (2πr))
+                let angularSpeed = velocidadLineal / (2 * Math.PI * sphere.radius);
+                
+                // Asignar velocidad angular en el eje correcto
+                sphere.angularVelocity = [axisX * angularSpeed, axisY * angularSpeed, 0];
+            }
+            // Actualizar la rotación en función de la velocidad angular
+            //sphere.rotation[0] = (sphere.rotation[0] + angularVelocity * dt) % 360; // Rotación en X
+            //sphere.rotation[1] = (sphere.rotation[1] + angularVelocity * dt) % 360; // Rotación en Y
+            //sphere.rotation[2] = (sphere.rotation[2] + angularVelocity * dt) % 360; // Rotación en Z
+            
+            sphere.rotation[0] += sphere.angularVelocity[0] * dt;
+            sphere.rotation[1] += sphere.angularVelocity[1] * dt;
+            sphere.rotation[2] += sphere.angularVelocity[2] * dt;
+        }
+
         
-        // Relacionar la rotación con la velocidad
-        let angularVelocity = velocidadLineal / (2 * Math.PI * sphere.radius); // θ = v / (2πr)
-        
-        // Actualizar la rotación en función de la velocidad angular
-        //sphere.rotation[0] = (sphere.rotation[0] + angularVelocity * dt) % 360; // Rotación en X
-        sphere.rotation[1] = (sphere.rotation[1] + angularVelocity * dt) % 360; // Rotación en Y
-        //sphere.rotation[2] = (sphere.rotation[2] + angularVelocity * dt) % 360; // Rotación en Z
-        
+
+
         let ejeX = vec3(1.0, 0.0, 0.0);
 		transform = mult(rotate(sphere.rotation[0], ejeX), transform);
 		let ejeY = vec3(0.0, 1.0, 0.0);
@@ -564,22 +587,11 @@ function update(dt) {
 						(sphereToPlane[2] * planes[0].normal[2]);
 				
 				if (d <= (sphere.radius + 0.0001)){ // ponemos un umbral para que deje de botar si pierde mucha energia
-
 					
-					sphere.velocity[2] = -sphere.velocity[2]*0.95;
+					sphere.velocity[2] = -sphere.velocity[2]*0.5;
 					sphere.position[2] += (sphere.radius - d) + 0.0001;
-					/*
-					let withinPlaneBounds = Math.abs(sphere.position[0] - plane.position[0]) <= plane.size  &&
-							Math.abs(sphere.position[1] - plane.position[1]) <= plane.size; 
-					*/
-
-					// Punto interseccion
-					let intersectionPoint = [
-						sphere.position[0] - (d - sphere.radius) * planes[0].normal[0],
-						sphere.position[1] - (d - sphere.radius) * planes[0].normal[1],
-						sphere.position[2] - (d - sphere.radius) * planes[0].normal[2]
-					];
-					
+                    
+                    console.log(planeCenter)
 				}
             }
 
