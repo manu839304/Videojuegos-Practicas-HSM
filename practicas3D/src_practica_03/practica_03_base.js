@@ -161,48 +161,6 @@ function colorPlano(color){
 };
 
 
-/* Si más de un plano, usar funciones
-
-// Function to calculate the center of the plane
-function calculatePlaneCenter(points) {
-    let center = [0, 0, 0];
-    points.forEach(point => {
-        center[0] += point[0];
-        center[1] += point[1];
-        center[2] += point[2];
-    });
-    center[0] /= points.length;
-    center[1] /= points.length;
-    center[2] /= points.length;
-    return center;
-}
-
-// Function to calculate the normal of the plane
-function calculatePlaneNormal(points) {
-    let v1 = subtract(points[1], points[0]);
-    let v2 = subtract(points[2], points[0]);
-    let normal = cross(v1, v2);
-    return normalize(normal);
-}
-
-// Function to calculate the size of the plane
-function calculatePlaneSize(points) {
-    let size = distance(points[0], points[2]);
-    return size;
-}
-
-// Calculate the plane properties
-let planeCenter = calculatePlaneCenter(pointsPlane);
-let planeNormal = calculatePlaneNormal(pointsPlane);
-let planeSize = calculatePlaneSize(pointsPlane);
-
-// Update the plane object
-plane.position = planeCenter;
-plane.normal = planeNormal;
-plane.size = planeSize;
-
-*/
-
 s = 10;
 
 var planes = [
@@ -212,30 +170,6 @@ var planes = [
         size: s,
         normal: [0.0, 0.0, 1.0],  // Normal hacia arriba (Z+)
     },
-    // // Pared izquierda
-    // {
-    //     position: [0, s, s],
-    //     size: s,
-    //     normal: [1.0, 0.0, 0.0],  // Normal hacia la derecha (X+)
-    // },
-    // // Pared derecha
-    // {
-    //     position: [0, -s, s],
-    //     size: s,
-    //     normal: [-1.0, 0.0, 0.0],  // Normal hacia la izquierda (X-)
-    // },
-    // // Pared delantera
-    // {
-    //     position: [-s, 0.0, s],
-    //     size: s,
-    //     normal: [-1.0, 0.0, 0.0],  // Normal hacia la izquierda (X-)
-    // },
-    // // Pared trasera
-    // {
-    //    position: [s, 0.0, s],
-    //    size: s,
-    //    normal: [-1.0, 0.0, 0.0],  // Normal hacia la izquierda (X-)
-    // }
 ];
 
 
@@ -341,20 +275,11 @@ window.onload = function init() {
 	spheres.forEach(function(sphere, index) {
 		if(index !== 0){ // Saltamos la blanca
 			sphere.position = [5*(2*Math.random() - 1), 5*(2*Math.random() - 1), (5*(4*Math.random() - 1))+5];
-			/*if(sphere.uniforms.u_color[0] !== 1.0 || sphere.uniforms.u_color[1] !== 1.0 || sphere.uniforms.u_color[2] !== 1.0){
-				sphere.position = [5*(2*Math.random() - 1), 5*(2*Math.random() - 1), 5*(4*Math.random() - 1)];
-			}
-			else{
-				sphere.position = [5*(2*Math.random() - 1), 5*(2*Math.random() - 1), sphere.radius/2];
-			}*/
-			//sphere.rotation = [Math.random()*360, Math.random()*360, Math.random()*360];
 		}
 	});
 
 	spheres[0].position = [0.0, 0.0, spheres[0].radius/2];
 	
-	// x = delante/atrás, y = izquierda/derecha, z = arriba/abajo
-
 	// Actualiza los modelos de los planos
 	planes.forEach(function(plane, index) {
 		// Comienza la transformación con la traslación
@@ -498,20 +423,9 @@ function update(dt) {
 
 	// Update state
 	spheres.forEach(function(sphere, i) {
-		
-		// Update state (rotation) of the sphere
-		//sphere.rotation[0] = (sphere.rotation[0] + 0.02*dt) % 360;
-		//sphere.rotation[1] = (sphere.rotation[1] + 0.02*dt) % 360;
 
 		// // Update graphical representation
 		let transform = scale(sphere.radius, sphere.radius, sphere.radius);
-
-        // let ejeX = vec3(1.0, 0.0, 0.0);
-		// transform = mult(rotate(sphere.rotation[0], ejeX), transform);
-		// let ejeY = vec3(0.0, 1.0, 0.0);
-		// transform = mult(rotate(sphere.rotation[1], ejeY), transform);
-		// let ejeZ = vec3(0.0, 0.0, 1.0);
-		// transform = mult(rotate(sphere.rotation[2], ejeZ), transform);
 
         if (sphere.position[2] <= sphere.radius + 0.01) {
             let velocidadLineal = Math.sqrt(
