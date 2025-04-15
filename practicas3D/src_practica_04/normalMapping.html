@@ -91,12 +91,28 @@
         attribute vec3 tangent2;
 
         // Declarar aqui varying necesarias para la resolucion
-
+        varying vec2 vUv;
+        varying vec3 vNormal; // normal del vertice en espacio de la camara
+        varying vec4 vPosition; // posicion del vertice en espacio de la camara
+        varying vec3 vTangent;  // Tangente en la direccion de la coordenadas u creciente de las coordeandas de la textura
+        varying vec3 vBitangent; // perpendicular a tangente y position
 
         void main() {
             
             // Calculos para dar valor a las varying aqui
+            // Transformar la posición del vértice a espacio de la cámara
+            vPosition = modelViewMatrix * vec4(position, 1.0);
+        
+            // Transformar la normal del vértice a espacio de la cámara
+            vNormal = normalize(normalMatrix * normal);
+        
+            // Pasar las coordenadas UV directamente
+            vUv = uv;
 
+            // Transformar tangente y bitangente a espacio de la cámara
+            vTangent = normalize(normalMatrix * tangent);
+            vBitangent = normalize(normalMatrix * tangent2);
+            
             // El vertex shader debe proporcionar gl_Position (en espacio homogeneo o de pantalla)
             // Transformar posiciones a espacio homogeneo
             gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
@@ -130,7 +146,11 @@
         uniform sampler2D normalMap;
 
         // Declarar aqui varying necesarias para la resolucion
-
+        varying vec2 vUv;
+        varying vec3 vNormal; // normal del fragment en espacio de la camara
+        varying vec4 vPosition; // posicion del fragment en espacio de la camara
+        varying vec3 vTangent;  // Tangente en la direccion de la coordenadas u creciente de las coordeandas de la textura
+        varying vec3 vBitangent; // perpendicular a tangente y position
 
         vec3 to_sRGB(vec3 c) { return pow(c, vec3(1.0/2.2)); }
         vec3 from_sRGB(vec3 c) { return pow(c, vec3(2.2)); }
@@ -140,10 +160,62 @@
             vec3 finalColor = vec3(0.0, 0.0, 0.0);
             
             // Calculos necesarios para obtener la normal de la textura en espacio de la camara aqui
-            
+            // Normalizamos los vectores
+            vec3 t = normalize(vTangent);
+            vec3 b = normalize(vBitangent);
+            vec3 n = normalize(vNormal);
+
+            // Matriz para pasar de tangente a espacio de la camara
+            mat3 tbnMatrix = mat3(t, b, n);
+
+            // Con el mapa de normales se obtiene la normal en espacio de la textura
+            vec3 normalTexture = texture2D(normalMap, vUv).rgb;
+            normalTexture = 2.0 * normalTexture - 1.0; // Map from [0, 1] to [-1, 1]
+            normalTexture.y *= -1.0; // Invert Y
+            normalTexture.xy *= bumpiness; // Apply bumpiness factor
+
+            vec3 normal = normalize(tbnMatrix * normalTexture);
+
             // Calculos necesarios para la iluminacion aqui
-            
-            // finalColor debe acabar conteniendo la intensidad/color resultante en el fragment
+
+            // Posición del fragmento en espacio de la cámara
+            vec3 fragPos = vPosition.xyz;
+
+            // Color difuso desde la textura
+            vec3 cdiff = texture2D(diffuseTexture, vUv).rgb;
+
+            // Coeficiente especular (fijado a 1.0)
+            vec3 cspec = vec3(1.0);
+
+            for (int i = 0; i < NUM_LIGHTS; i++) {
+                // Vector hacia la luz (en espacio de la cámara)
+                vec3 l = normalize(lightPositions[i] - fragPos);
+
+                // Vector hacia la cámara (en espacio de la cámara)
+                vec3 v = normalize(-fragPos);
+
+                // Vector bisectriz entre l y v
+                vec3 h = normalize(l + v);
+
+                // Distancia entre la luz y el punto
+                float r = length(lightPositions[i] - fragPos);
+
+                // Atenuación por distancia
+                float attenuation = 1.0 / (r * r);
+
+                // Producto escalar n · l (máximo 0 para evitar valores negativos)
+                float nDotL = max(dot(normal, l), 0.0);
+
+                // Producto escalar n · h (máximo 0 para evitar valores negativos)
+                float nDotH = max(dot(normal, h), 0.0);
+
+                // Iluminación especular
+                vec3 diff_spec = cdiff + cspec * pow(nDotH, 1.0 / roughness) ;
+
+                // Suma de las componentes difusa y especular, con atenuación
+                finalColor += attenuation * diff_spec * lightColors[i] * nDotL;
+            }
+
             
             // Solo se sombrea si esta "de cara", si no se le da un color fijo
             if (gl_FrontFacing) {
