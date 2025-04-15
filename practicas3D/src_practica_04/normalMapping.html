@@ -210,7 +210,7 @@
                 float nDotH = max(dot(normal, h), 0.0);
 
                 // Iluminación especular
-                vec3 diff_spec = cdiff + cspec * pow(nDotH, 1.0 / roughness) ;
+                vec3 diff_spec = cdiff + cspec * pow(nDotH, 1.0 / roughness);
 
                 // Suma de las componentes difusa y especular, con atenuación
                 finalColor += attenuation * diff_spec * lightColors[i] * nDotL;
